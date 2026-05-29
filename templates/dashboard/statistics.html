@@ -1,0 +1,10 @@
+{% extends "base/base.html" %}
+{% block title %}Estadisticas | MoviliData OS{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Analitica historica</p><h1>Estadisticas urbanas</h1></div></div>
+<section class="dashboard-grid">
+  <div class="panel"><h2>Congestion semanal</h2><canvas id="congestionChart"></canvas></div>
+  <div class="panel"><h2>Accidentalidad</h2><canvas id="accidentChart"></canvas></div>
+  <div class="panel"><h2>Lluvia vs trafico</h2><canvas id="rainChart"></canvas></div>
+</section>
+{% endblock %}

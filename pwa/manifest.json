@@ -1,0 +1,10 @@
+{
+  "name": "MoviliData OS",
+  "short_name": "MoviliData",
+  "start_url": "/dashboard/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "description": "Plataforma inteligente de movilidad urbana para Medellin.",
+  "icons": []
+}

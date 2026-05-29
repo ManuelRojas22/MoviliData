@@ -1,0 +1,6 @@
+.metric-card,.panel,.alert-card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.metric-card:hover,.panel:hover,.alert-card:hover{transform:translateY(-3px);border-color:rgba(56,189,248,.48);box-shadow:0 30px 90px rgba(0,0,0,.34)}
+.status-dot{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+.live-flash{animation:liveFlash .7s ease}
+@keyframes liveFlash{0%{filter:brightness(1.8);box-shadow:0 0 0 rgba(56,189,248,0)}45%{filter:brightness(1.2);box-shadow:0 0 28px rgba(56,189,248,.35)}100%{filter:brightness(1);box-shadow:inherit}}

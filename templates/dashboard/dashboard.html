@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% block title %}Dashboard | MoviliData OS{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Operacion urbana</p><h1>Dashboard inteligente</h1></div><button class="btn btn-info" id="refreshDashboard">Actualizar</button></div>
+<section class="metric-grid" id="metricGrid"></section>
+<section class="dashboard-grid mt-4">
+  <div class="panel map-panel"><h2>Mapa operativo</h2><div id="mainMap" class="map-large"></div></div>
+  <div class="panel"><h2>Congestion por zona</h2><canvas id="congestionChart"></canvas></div>
+  <div class="panel"><h2>Clima e incidentes</h2><div id="weatherPanel"></div></div>
+  <div class="panel"><h2>Tendencia de accidentes</h2><canvas id="accidentChart"></canvas></div>
+  <div class="panel alerts-feed"><h2>Alertas activas</h2><div id="alertsFeed"></div></div>
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% block title %}Login | MoviliData OS{% endblock %}
+{% block content %}
+<section class="auth-wrap panel">
+  <h1>Acceso operativo</h1>
+  <form method="post">{% csrf_token %}
+    <input class="form-control mb-3" name="username" value="admin" placeholder="Usuario">
+    <input class="form-control mb-3" name="password" value="admin123" type="password" placeholder="Contrasena">
+    {% if error %}<p class="text-danger">{{ error }}</p>{% endif %}
+    <button class="btn btn-primary w-100">Entrar</button>
+  </form>
+</section>
+{% endblock %}

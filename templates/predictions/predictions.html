@@ -1,0 +1,6 @@
+{% extends "base/base.html" %}
+{% block title %}Predicciones | MoviliData OS{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Machine learning</p><h1>Prediccion de congestion</h1></div><input type="range" id="hourRange" min="6" max="22" value="18"></div>
+<section class="dashboard-grid"><div class="panel"><h2>Pronostico por zona</h2><canvas id="predictionChart"></canvas></div><div class="panel map-panel"><div id="predictionMap" class="map-large"></div></div></section>
+{% endblock %}

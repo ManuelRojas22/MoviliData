@@ -1,0 +1,167 @@
+{% extends "base/base.html" %}
+{% block title %}MoviliData OS | Inicio{% endblock %}
+{% block body_class %}landing-body{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+
+<section class="landing-hero">
+  <div class="hero-content">
+    <span class="hero-badge">Plataforma de movilidad inteligente</span>
+    <h1>MoviliData <span class="text-gradient">OS</span></h1>
+    <p class="hero-desc">Un sistema web para analizar la movilidad urbana de Medellin, visualizar zonas criticas, revisar alertas, consultar rutas seguras y apoyar decisiones preventivas con informacion clara.</p>
+    <div class="hero-actions">
+      <a href="/dashboard/" class="btn-hero btn-hero-primary">Entrar al sistema</a>
+      <a href="/users/login/" class="btn-hero btn-hero-outline">Iniciar sesion</a>
+      <a href="/users/register/" class="btn-hero btn-hero-ghost">Registrarse</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-glass-card">
+      <div class="glass-header">
+        <span class="glass-dot red"></span>
+        <span class="glass-dot amber"></span>
+        <span class="glass-dot green"></span>
+        <span class="glass-label">sistema activo</span>
+      </div>
+      <div class="glass-body">
+        <div class="glass-row"><span>Estado general</span><strong class="badge-pill badge-green">Estable</strong></div>
+        <div class="glass-row"><span>Alertas activas</span><strong class="badge-pill badge-amber">3</strong></div>
+        <div class="glass-row"><span>Zonas monitoreadas</span><strong class="badge-pill badge-cyan">12</strong></div>
+        <div class="glass-row"><span>Predicciones hoy</span><strong class="badge-pill badge-purple">8</strong></div>
+        <div class="glass-row"><span>Rutas seguras</span><strong class="badge-pill badge-blue">24</strong></div>
+      </div>
+      <div class="glass-footer">
+        <span class="pulse-dot"></span>
+        <span>Actualizado en tiempo real</span>
+        <span class="glass-signal">Live</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="landing-metrics-bar">
+  <div class="metric-item">
+    <div class="metric-icon metric-icon-cyan">D</div>
+    <strong class="metric-num-cyan">+12K</strong>
+    <span>Datos procesados</span>
+  </div>
+  <div class="metric-item">
+    <div class="metric-icon metric-icon-purple">Z</div>
+    <strong class="metric-num-purple">32</strong>
+    <span>Zonas de cobertura</span>
+  </div>
+  <div class="metric-item">
+    <div class="metric-icon metric-icon-green">U</div>
+    <strong class="metric-num-green">98%</strong>
+    <span>Disponibilidad</span>
+  </div>
+  <div class="metric-item">
+    <div class="metric-icon metric-icon-amber">24</div>
+    <strong class="metric-num-amber">24/7</strong>
+    <span>Monitoreo continuo</span>
+  </div>
+</section>
+
+<section class="landing-section-header">
+  <span class="section-badge section-badge-cyan">Beneficios</span>
+  <h2>Por que usar MoviliData OS</h2>
+  <p>Integramos mapas, graficas, alertas, predicciones y rutas en una sola interfaz para ayudarte a entender la movilidad de Medellin.</p>
+</section>
+
+<section class="landing-features">
+  <article class="feature-card card-accent-cyan">
+    <div class="feature-icon-wrap icon-wrap-cyan">01</div>
+    <h3>Decision rapida</h3>
+    <p>Reune la informacion importante en pantallas faciles de leer para actuar con menos demora.</p>
+  </article>
+  <article class="feature-card card-accent-purple">
+    <div class="feature-icon-wrap icon-wrap-purple">02</div>
+    <h3>Prevencion</h3>
+    <p>Permite reconocer zonas de riesgo antes de que se conviertan en puntos criticos.</p>
+  </article>
+  <article class="feature-card card-accent-amber">
+    <div class="feature-icon-wrap icon-wrap-amber">03</div>
+    <h3>Vision geoespacial</h3>
+    <p>Usa mapas para ubicar incidentes, rutas, sectores congestionados y areas vulnerables.</p>
+  </article>
+  <article class="feature-card card-accent-green">
+    <div class="feature-icon-wrap icon-wrap-green">04</div>
+    <h3>Analitica visual</h3>
+    <p>Muestra tendencias, comparaciones y predicciones para entender mejor el comportamiento vial.</p>
+  </article>
+</section>
+
+<section class="landing-section-header">
+  <span class="section-badge section-badge-purple">Flujo de trabajo</span>
+  <h2>Comienza en 4 pasos</h2>
+  <p>Un flujo de trabajo recomendado para aprovechar todo el sistema.</p>
+</section>
+
+<section class="landing-steps">
+  <div class="step-card step-cyan">
+    <div class="step-number step-num-cyan">01</div>
+    <div class="step-body">
+      <h3>Entra al dashboard</h3>
+      <p>Revisa el estado general de movilidad y las tarjetas principales.</p>
+    </div>
+  </div>
+  <div class="step-connector"><span>&gt;</span></div>
+  <div class="step-card step-purple">
+    <div class="step-number step-num-purple">02</div>
+    <div class="step-body">
+      <h3>Consulta el mapa</h3>
+      <p>Identifica zonas de riesgo, heatmaps y puntos con mayor impacto.</p>
+    </div>
+  </div>
+  <div class="step-connector"><span>&gt;</span></div>
+  <div class="step-card step-amber">
+    <div class="step-number step-num-amber">03</div>
+    <div class="step-body">
+      <h3>Revisa alertas</h3>
+      <p>Prioriza eventos activos por nivel de riesgo y ubicacion.</p>
+    </div>
+  </div>
+  <div class="step-connector"><span>&gt;</span></div>
+  <div class="step-card step-green">
+    <div class="step-number step-num-green">04</div>
+    <div class="step-body">
+      <h3>Evalua rutas y predicciones</h3>
+      <p>Compara alternativas seguras y anticipa congestion por hora.</p>
+    </div>
+  </div>
+</section>
+
+<section class="landing-section-header">
+  <span class="section-badge section-badge-amber">Informacion</span>
+  <h2>Todo lo que necesitas saber</h2>
+  <p>MoviliData OS reune datos, mapas y analitica en un solo lugar.</p>
+</section>
+
+<section class="landing-about">
+  <div class="about-card about-card-top-cyan">
+    <div class="about-icon-box icon-box-cyan">M</div>
+    <h3>Que muestra</h3>
+    <p>Trafico por zona, alertas preventivas, rutas recomendadas, zonas criticas, predicciones de congestion y graficas urbanas.</p>
+  </div>
+  <div class="about-card about-card-top-purple">
+    <div class="about-icon-box icon-box-purple">A</div>
+    <h3>Para quien sirve</h3>
+    <p>Analistas de movilidad, equipos operativos, entidades publicas, estudiantes y proyectos de ciudad inteligente.</p>
+  </div>
+  <div class="about-card about-card-top-green">
+    <div class="about-icon-box icon-box-green">S</div>
+    <h3>Datos usados</h3>
+    <p>Informacion climatica, ubicaciones urbanas, incidentes disponibles, reglas de riesgo y procesamiento predictivo.</p>
+  </div>
+</section>
+
+<section class="landing-cta">
+  <div class="cta-content">
+    <span class="section-badge section-badge-green">Comienza ahora</span>
+    <h2>Explora la movilidad de Medellin</h2>
+    <p>Accede al sistema para ver mapas, alertas, predicciones, rutas y paneles operativos.</p>
+    <a href="/dashboard/" class="btn-hero btn-hero-primary btn-hero-lg">Abrir MoviliData OS</a>
+  </div>
+</section>
+
+{% endblock %}
