@@ -1,6 +1,29 @@
-.metric-card,.panel,.alert-card{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.metric-card,.panel,.alert-card{transition:transform var(--ease-base),border-color var(--ease-base),box-shadow var(--ease-base)}
 .metric-card:hover,.panel:hover,.alert-card:hover{transform:translateY(-3px);border-color:rgba(56,189,248,.48);box-shadow:0 30px 90px rgba(0,0,0,.34)}
 .status-dot{animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
 .live-flash{animation:liveFlash .7s ease}
 @keyframes liveFlash{0%{filter:brightness(1.8);box-shadow:0 0 0 rgba(56,189,248,0)}45%{filter:brightness(1.2);box-shadow:0 0 28px rgba(56,189,248,.35)}100%{filter:brightness(1);box-shadow:inherit}}
+
+.skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);min-height:1em}
+.skeleton::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);animation:shimmer 1.6s infinite;transform:translateX(-100%)}
+@keyframes shimmer{100%{transform:translateX(100%)}}
+.skeleton-card{min-height:142px;padding:20px}
+.skeleton-card .skeleton{margin-bottom:10px}
+.skeleton-card .skeleton:first-child{width:45%}
+.skeleton-card .skeleton:nth-child(2){width:80%;height:2.25rem}
+.skeleton-card .skeleton:nth-child(3){width:35%}
+.skeleton-row{display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:12px;border:1px solid var(--line);border-radius:var(--radius-md)}
+.skeleton-row .skeleton{flex-shrink:0}
+.skeleton-row .skeleton:first-child{width:50%}
+.skeleton-row .skeleton:last-child{width:30%;margin-left:auto}
+.skeleton-table-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px;padding:12px;border-bottom:1px solid var(--line)}
+.skeleton-table-row .skeleton{height:1.1rem}
+#trafficTable .skeleton{height:1.2rem;margin:2px 0}
+
+.skeleton-container{position:relative}
+.skeleton-container .skeleton-overlay{position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;gap:12px;padding:inherit;background:var(--surface)}
+.skeleton-container.loaded .skeleton-overlay{display:none}
+
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}

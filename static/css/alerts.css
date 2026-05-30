@@ -9,7 +9,7 @@
   min-height:180px;
   padding:20px;
   border:1px solid var(--line);
-  border-radius:8px;
+  border-radius:var(--radius-md);
   background:linear-gradient(180deg,rgba(20,34,56,.88),rgba(12,23,39,.84));
   box-shadow:var(--shadow-soft);
 }
@@ -24,9 +24,9 @@
 .alert-card.media::before{background:var(--amber)}
 .alert-card h2{
   margin:14px 0 10px;
-  color:#fff;
+  color:var(--text-primary);
   font-size:1.1rem;
-  font-weight:850;
+  font-weight:var(--weight-bold);
 }
 .alert-card p{margin-bottom:14px;color:var(--text-soft)}
-.alert-card small{color:var(--text-muted);font-weight:750}
+.alert-card small{color:var(--text-muted);font-weight:var(--weight-semibold)}

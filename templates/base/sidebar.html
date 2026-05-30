@@ -1,10 +1,10 @@
 <aside class="sidebar" id="sidebar">
-  <a href="/dashboard/">Dashboard</a>
-  <a href="/traffic/">Trafico</a>
-  <a href="/routes/">Rutas seguras</a>
-  <a href="/predictions/">Predicciones</a>
-  <a href="/risk-zones/">Zonas de riesgo</a>
-  <a href="/alerts/">Alertas</a>
-  <a href="/statistics/">Estadisticas</a>
-  <a href="/users/profile/">Perfil</a>
+  <div class="sidebar-brand"><img src="/static/images/logo.png" alt="MoviliData OS"> MoviliData OS</div>
+  <a href="/dashboard/" {% if request.path == '/dashboard/' %}class="active"{% endif %}>Dashboard</a>
+  <a href="/traffic/" {% if request.path == '/traffic/' %}class="active"{% endif %}>Trafico</a>
+  <a href="/routes/" {% if request.path == '/routes/' %}class="active"{% endif %}>Rutas seguras</a>
+  <a href="/predictions/" {% if request.path == '/predictions/' %}class="active"{% endif %}>Predicciones</a>
+  <a href="/risk-zones/" {% if request.path == '/risk-zones/' %}class="active"{% endif %}>Zonas de riesgo</a>
+  <a href="/alerts/" {% if request.path == '/alerts/' %}class="active"{% endif %}>Alertas</a>
+  <a href="/statistics/" {% if request.path == '/statistics/' %}class="active"{% endif %}>Estadisticas</a>
 </aside>

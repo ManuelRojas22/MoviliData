@@ -1,13 +1,45 @@
 {% extends "base/base.html" %}
 {% block title %}Login | MoviliData OS{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block navbar %}{% endblock %}
+{% block sidebar %}{% endblock %}
 {% block content %}
+<a href="/" class="back-link">← Volver al inicio</a>
 <section class="auth-wrap panel">
   <h1>Acceso operativo</h1>
-  <form method="post">{% csrf_token %}
-    <input class="form-control mb-3" name="username" value="admin" placeholder="Usuario">
-    <input class="form-control mb-3" name="password" value="admin123" type="password" placeholder="Contrasena">
-    {% if error %}<p class="text-danger">{{ error }}</p>{% endif %}
+  <form method="post" id="loginForm" onsubmit="return validateLogin()">{% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Usuario</label>
+      <input class="form-control" name="username" value="admin" id="loginUser">
+      <small class="field-error" id="loginUserError"></small>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contrasena</label>
+      <input class="form-control" name="password" value="admin123" type="password" id="loginPass">
+      <small class="field-error" id="loginPassError"></small>
+    </div>
     <button class="btn btn-primary w-100">Entrar</button>
+    <p class="auth-switch">¿No tienes cuenta? <a href="/users/register/">Registrate aqui</a></p>
   </form>
 </section>
+<script>
+function validateLogin() {
+  const user = document.getElementById("loginUser");
+  const pass = document.getElementById("loginPass");
+  let valid = true;
+  document.querySelectorAll(".field-error").forEach(e => e.textContent = "");
+  if (!user.value.trim()) {
+    document.getElementById("loginUserError").textContent = "Ingresa tu usuario";
+    valid = false;
+  }
+  if (!pass.value.trim()) {
+    document.getElementById("loginPassError").textContent = "Ingresa tu contrasena";
+    valid = false;
+  }
+  if (!valid && window.Swal) {
+    Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Completa todos los campos", showConfirmButton: false, timer: 3500, background: "#101b2c", color: "#f4f7fb", iconColor: "#f5b84b" });
+  }
+  return valid;
+}
+</script>
 {% endblock %}

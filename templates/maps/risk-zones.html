@@ -1,6 +1,14 @@
 {% extends "base/base.html" %}
 {% block title %}Zonas de riesgo | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Geoanalitica</p><h1>Zonas criticas y heatmaps</h1></div></div>
-<section class="panel map-panel"><div id="riskMap" class="map-xl"></div></section>
+<div class="page-head"><div><p class="eyebrow">Geoanalitica</p><h1>Zonas criticas y heatmaps</h1></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="panel map-panel"><div id="riskMap" class="map-xl"><div class="spinner"></div></div></section>
+<script>
+(async()=>{
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  if (c && Date.now() - c.ts < 10000) { window.__bootData = c.data; return; }
+  try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});window.__bootData=await r.json()}catch(e){}
+})();
+</script>
 {% endblock %}

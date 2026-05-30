@@ -1,10 +1,10 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from apps.dashboard.services import demo_points
+from apps.dashboard.services import demo_points, bootstrap_data
 
 
 def alerts(request):
-    return render(request, "alerts/alerts.html")
+    return render(request, "alerts/alerts.html", {"boot": bootstrap_data()})
 
 
 def api_alerts(request):

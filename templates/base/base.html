@@ -7,8 +7,21 @@
   <meta name="theme-color" content="#0f172a">
   <title>{% block title %}MoviliData OS{% endblock %}</title>
   <link rel="manifest" href="/pwa/manifest.json">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="preconnect" href="/api/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
+  <link rel="preload" href="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js" as="script">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="prefetch" href="/dashboard/">
+  <link rel="prefetch" href="/traffic/">
+  <link rel="prefetch" href="/routes/">
+  <link rel="prefetch" href="/predictions/">
+  <link rel="prefetch" href="/alerts/">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="{% static 'css/global.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'css/maps.css' %}">
@@ -20,19 +33,42 @@
   {% block navbar %}{% include "base/navbar.html" %}{% endblock %}
   <main class="app-shell">
     {% block sidebar %}{% include "base/sidebar.html" %}{% endblock %}
-    <section class="content-wrap">{% block content %}{% endblock %}</section>
+    <section class="content-wrap">
+      {% if messages %}
+      <div id="django-messages" style="display:none" data-messages='[{% for msg in messages %}{"text":"{{ msg|escapejs }}","tags":"{{ msg.tags }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'></div>
+      {% endif %}
+      {% if error %}<div id="django-error" style="display:none" data-error="{{ error|escapejs }}"></div>{% endif %}
+      {% block content %}{% endblock %}
+    </section>
   </main>
   {% block footer %}{% include "base/footer.html" %}{% endblock %}
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-  <script src="{% static 'js/api.js' %}"></script>
-  <script src="{% static 'js/main.js' %}"></script>
-  <script src="{% static 'js/maps.js' %}"></script>
-  <script src="{% static 'js/charts.js' %}"></script>
-  <script src="{% static 'js/alerts.js' %}"></script>
-  <script src="{% static 'js/dashboard.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js" defer></script>
+  <script src="{% static 'js/api.js' %}" defer></script>
+  <script src="{% static 'js/main.js' %}" defer></script>
+  <script src="{% static 'js/maps.js' %}" defer></script>
+  <script src="{% static 'js/charts.js' %}" defer></script>
+  <script src="{% static 'js/alerts.js' %}" defer></script>
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
   {% block scripts %}{% endblock %}
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const msgs = document.getElementById("django-messages");
+    if (msgs) {
+      try {
+        JSON.parse(msgs.dataset.messages).forEach(m => {
+          if (window.Swal) Swal.fire({ toast: true, position: "top-end", icon: m.tags === "success" ? "success" : "error", title: m.text, showConfirmButton: false, timer: 4000, timerProgressBar: true, background: "#101b2c", color: "#f4f7fb", iconColor: m.tags === "success" ? "#28d17c" : "#f15d5d" });
+        });
+      } catch(e) {}
+    }
+    const err = document.getElementById("django-error");
+    if (err && err.dataset.error && window.Swal) {
+      Swal.fire({ toast: true, position: "top-end", icon: "error", title: err.dataset.error, showConfirmButton: false, timer: 5000, timerProgressBar: true, background: "#101b2c", color: "#f4f7fb", iconColor: "#f15d5d" });
+    }
+  });
+  </script>
 </body>
 </html>

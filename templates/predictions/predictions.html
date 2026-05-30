@@ -1,6 +1,67 @@
 {% extends "base/base.html" %}
 {% block title %}Predicciones | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Machine learning</p><h1>Prediccion de congestion</h1></div><input type="range" id="hourRange" min="6" max="22" value="18"></div>
-<section class="dashboard-grid"><div class="panel"><h2>Pronostico por zona</h2><canvas id="predictionChart"></canvas></div><div class="panel map-panel"><div id="predictionMap" class="map-large"></div></div></section>
+<div class="page-head"><div><p class="eyebrow">Machine learning</p><h1>Prediccion de congestion</h1></div><div class="d-flex align-items-center gap-2"><span id="modelBadge" class="badge-pill badge-amber">Cargando modelo...</span><input type="range" id="hourRange" min="6" max="22" value="18"><button class="btn btn-info" data-refresh>Actualizar</button></div></div>
+<section class="panel mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <label class="text-cyan small">Pronostico:</label>
+    <input type="range" id="forecastOffset" min="0" max="2" value="0" class="form-range w-auto" style="width:120px">
+    <span id="forecastLabel" class="text-light small">Hora actual</span>
+  </div>
+</section>
+<section class="dashboard-grid">
+  <div class="panel"><h2>Pronostico por zona</h2><canvas id="predictionChart"></canvas><div class="spinner" id="spinner-predictionChart"></div></div>
+  <div class="panel map-panel"><div id="predictionMap" class="map-large"><div class="spinner"></div></div></div>
+</section>
+<script>
+(async()=>{
+  const c=window.__prefetchCache&&window.__prefetchCache["/api/bootstrap"];
+  if(c&&Date.now()-c.ts<10000){window.__bootData=c.data;return}
+  try{const r=await fetch("/api/bootstrap?_="+Date.now(),{headers:{Accept:"application/json"}});window.__bootData=await r.json()}catch(e){}
+})();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const slider = document.getElementById("forecastOffset");
+  const label = document.getElementById("forecastLabel");
+  const range = document.getElementById("hourRange");
+  if (slider && label) {
+    const update = () => {
+      const base = range ? parseInt(range.value) : 18;
+      const off = parseInt(slider.value);
+      const labels = ["Hora actual", "+1 hora", "+2 horas"];
+      label.textContent = `${(base + off) % 24}:00 (${labels[off] || "+" + off + " horas"})`;
+    };
+    slider.addEventListener("input", update);
+    if (range) range.addEventListener("input", update);
+    update();
+  }
+});
+</script>
+<script>
+async function updateModelBadge() {
+  const badge = document.getElementById("modelBadge");
+  if (!badge) return;
+  try {
+    const cacheKey = "/api/predictions";
+    const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+    let data;
+    if (c && Date.now() - c.ts < 10000) {
+      data = c.data;
+    } else {
+      const resp = await fetch(cacheKey + "?hour=" + (parseInt(document.getElementById("hourRange")?.value || 18)));
+      if (!resp.ok) return;
+      data = await resp.json();
+    }
+    if (data.model_type === "ml") {
+      badge.textContent = "ML en produccion \u2713";
+      badge.className = "badge-pill badge-cyan";
+    } else {
+      badge.textContent = "Modelo en entrenamiento \u2014 datos insuficientes";
+      badge.className = "badge-pill badge-amber";
+    }
+  } catch (_) {}
+}
+(async () => { await updateModelBadge(); setInterval(updateModelBadge, 15000); })();
+</script>
 {% endblock %}

@@ -18,11 +18,22 @@ def login_view(request):
         pass
     error = None
     if request.method == "POST":
-        user = authenticate(request, username=request.POST.get("username"), password=request.POST.get("password"))
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+        user = authenticate(request, username=username, password=password)
         if user:
-            login(request, user)
-            return redirect("dashboard")
-        error = "Credenciales invalidas"
+            if not user.is_active:
+                error = "Cuenta desactivada. Contacta al administrador."
+            else:
+                login(request, user)
+                messages.success(request, f"Bienvenido de nuevo, {user.username}.")
+                return redirect("dashboard")
+        elif User.objects.filter(username=username).exists():
+            error = "Contrasena incorrecta."
+        elif User.objects.filter(email=username).exists():
+            error = "Usa tu nombre de usuario, no tu correo."
+        else:
+            error = "El usuario no existe. ¿Quieres registrarte?"
     return render(request, "users/login.html", {"error": error})
 
 
@@ -47,8 +58,8 @@ def register_view(request):
         else:
             user = User.objects.create_user(username=username, email=email, password=password)
             UserProfile.objects.create(user_id=user.id, organization=organization, role="Usuario registrado")
-            login(request, user)
-            return redirect("dashboard")
+            messages.success(request, "Cuenta creada exitosamente. Ahora puedes iniciar sesion.")
+            return redirect("login")
     return render(request, "users/register.html")
 
 

@@ -1,10 +1,41 @@
 {% extends "base/base.html" %}
 {% block title %}Estadisticas | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Analitica historica</p><h1>Estadisticas urbanas</h1></div></div>
+<div class="page-head"><div><p class="eyebrow">Analitica historica</p><h1>Estadisticas urbanas</h1></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
 <section class="dashboard-grid">
-  <div class="panel"><h2>Congestion semanal</h2><canvas id="congestionChart"></canvas></div>
-  <div class="panel"><h2>Accidentalidad</h2><canvas id="accidentChart"></canvas></div>
-  <div class="panel"><h2>Lluvia vs trafico</h2><canvas id="rainChart"></canvas></div>
+  <div class="panel"><h2>Congestion semanal</h2><canvas id="congestionChart"></canvas><div class="spinner" id="spinner-congestionChart"></div></div>
+  <div class="panel"><h2>Accidentalidad</h2><canvas id="accidentChart"></canvas><div class="spinner" id="spinner-accidentChart"></div></div>
+  <div class="panel"><h2>Lluvia vs trafico</h2><canvas id="rainChart"></canvas><div class="spinner" id="spinner-rainChart"></div></div>
 </section>
+<script>
+(async()=>{
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  let boot;
+  if (c && Date.now() - c.ts < 10000) {
+    boot = c.data;
+  } else {
+    try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});boot=await r.json()}catch(e){return}
+  }
+  window.__bootData = boot;
+  if (window.renderStatisticsCharts) renderStatisticsCharts(boot);
+})();
+function _refreshStats() {
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  let boot;
+  if (c && Date.now() - c.ts < 10000) {
+    boot = c.data;
+  } else {
+    (async()=>{ try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});boot=await r.json();window.__bootData=boot;if(window.renderStatisticsCharts)renderStatisticsCharts(boot)}catch(e){} })();
+    return;
+  }
+  window.__bootData = boot;
+  if (window.renderStatisticsCharts) renderStatisticsCharts(boot);
+}
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.renderStatisticsCharts && window.__bootData) renderStatisticsCharts(window.__bootData);
+  MoviliLive.register(_refreshStats, 20000);
+});
+</script>
 {% endblock %}

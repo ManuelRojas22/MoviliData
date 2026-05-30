@@ -31,6 +31,9 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Logs
+logs/
+
 # Data artifacts
 data/raw/*
 data/processed/*

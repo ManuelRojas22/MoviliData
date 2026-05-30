@@ -6,8 +6,9 @@ async function renderAlerts() {
   const feed = document.getElementById("alertsFeed");
   const page = document.getElementById("alertsPage");
   if (!feed && !page) return;
-  const data = await MoviliAPI.alerts();
-  const html = data.alerts.map(alertMarkup).join("");
+  const boot = await MoviliAPI.bootstrap();
+  const data = boot && boot.alerts ? boot : await MoviliAPI.alerts();
+  const html = (data.alerts || []).map(alertMarkup).join("");
   if (feed) MoviliLive.setHTML(feed, html);
   if (page) MoviliLive.setHTML(page, html);
 }

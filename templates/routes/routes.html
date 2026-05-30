@@ -1,6 +1,50 @@
 {% extends "base/base.html" %}
 {% block title %}Rutas | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Prevencion</p><h1>Rutas seguras recomendadas</h1></div></div>
-<section class="dashboard-grid"><div class="panel map-panel"><div id="routesMap" class="map-large"></div></div><div class="panel"><h2>Opciones</h2><div id="routesList"></div></div></section>
+<div class="page-head"><div><p class="eyebrow">Prevencion</p><h1>Rutas seguras recomendadas</h1></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="panel mb-3">
+  <form id="routeForm" class="d-flex gap-3 align-items-end flex-wrap">
+    <div><label class="form-label text-cyan small">Origen</label>
+      <select id="routeOrigin" class="form-select form-select-sm bg-dark text-light border-secondary">
+        <option value="">-- Seleccionar --</option>
+        {% for n, _lat, _lng in neighborhoods %}
+        <option value="{{ n }}" {% if origin == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><label class="form-label text-cyan small">Destino</label>
+      <select id="routeDest" class="form-select form-select-sm bg-dark text-light border-secondary">
+        <option value="">-- Seleccionar --</option>
+        {% for n, _lat, _lng in neighborhoods %}
+        <option value="{{ n }}" {% if destination == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-info">Buscar ruta</button>
+    <button type="button" id="clearRoute" class="btn btn-sm btn-outline-light">Limpiar ruta</button>
+  </form>
+</section>
+<section class="dashboard-grid">
+  <div class="panel map-panel"><div id="routesMap" class="map-large"><div class="spinner"></div></div></div>
+  <div class="panel">
+    <h2>Opciones de ruta</h2>
+    <div id="routesList"><div class="route-item"><p>Selecciona origen y destino para ver rutas</p></div></div>
+    <hr class="border-secondary my-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <h3 class="fs-6 text-cyan mb-0">Historial</h3>
+      <button type="button" id="clearHistory" class="btn btn-sm btn-outline-light ms-auto">Limpiar</button>
+    </div>
+    <div id="routesHistory"></div>
+  </div>
+</section>
+<script>
+(async()=>{
+  const c=window.__prefetchCache&&window.__prefetchCache["/api/bootstrap"];
+  if(c&&Date.now()-c.ts<10000){window.__bootData=c.data;return}
+  try{const r=await fetch("/api/bootstrap?_="+Date.now(),{headers:{Accept:"application/json"}});window.__bootData=await r.json()}catch(e){}
+})();
+</script>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/routes.js" defer></script>
 {% endblock %}

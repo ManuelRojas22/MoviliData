@@ -1,6 +1,38 @@
 {% extends "base/base.html" %}
 {% block title %}Alertas | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Respuesta temprana</p><h1>Alertas preventivas</h1></div></div>
-<section class="alert-grid" id="alertsPage"></section>
+<div class="page-head"><div><p class="eyebrow">Respuesta temprana</p><h1>Alertas preventivas</h1></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="alert-grid" id="alertsPage" data-state="loading">
+  {% if boot and boot.alerts %}
+  {% for a in boot.alerts %}
+  <article class="alert-card {{ a.level }} panel"><span class="badge-risk">{{ a.level }}</span><h2>{{ a.title }}</h2><p>{{ a.description }}</p><small>{{ a.zone }}</small></article>
+  {% empty %}
+  <article class="alert-card panel"><p class="text-muted">Sin alertas activas</p></article>
+  {% endfor %}
+  {% endif %}
+</section>
+<script>
+(async()=>{
+  const fromCache = window.__prefetchCache && window.__prefetchCache["/api/bootstrap"];
+  let d;
+  if (fromCache && Date.now() - fromCache.ts < 10000) {
+    d = fromCache.data;
+  } else {
+    try {
+      const r=await fetch("/api/bootstrap?_="+Date.now(),{headers:{Accept:"application/json"}});
+      d=await r.json();
+    } catch(e){return}
+  }
+  window.__bootData=d;
+  const p=document.getElementById("alertsPage");
+  if(p&&d.alerts&&d.alerts.length){
+    const h=d.alerts.map(x=>`<article class="alert-card ${x.level} panel"><span class="badge-risk">${x.level}</span><h2>${x.title}</h2><p>${x.description}</p><small>${x.zone}</small></article>`).join("");
+    if(p.dataset.lastHtml!==h){p.dataset.lastHtml=h;p.innerHTML=h;}
+  }else if(p){
+    const h='<article class="alert-card panel"><p class="text-muted">Sin alertas activas</p></article>';
+    if(p.dataset.lastHtml!==h){p.dataset.lastHtml=h;p.innerHTML=h;}
+  }
+  if(p) p.dataset.state="loaded";
+})();
+</script>
 {% endblock %}
