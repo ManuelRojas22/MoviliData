@@ -17,6 +17,7 @@ def login_view(request):
     except Exception:
         pass
     error = None
+    prefilled_username = request.GET.get("username", "")
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
@@ -34,7 +35,7 @@ def login_view(request):
             error = "Usa tu nombre de usuario, no tu correo."
         else:
             error = "El usuario no existe. ¿Quieres registrarte?"
-    return render(request, "users/login.html", {"error": error})
+    return render(request, "users/login.html", {"error": error, "prefilled_username": prefilled_username})
 
 
 def register_view(request):
@@ -59,7 +60,7 @@ def register_view(request):
             user = User.objects.create_user(username=username, email=email, password=password)
             UserProfile.objects.create(user_id=user.id, organization=organization, role="Usuario registrado")
             messages.success(request, "Cuenta creada exitosamente. Ahora puedes iniciar sesion.")
-            return redirect("login")
+            return redirect(f"/users/login/?username={username}")
     return render(request, "users/register.html")
 
 

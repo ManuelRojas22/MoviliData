@@ -28,8 +28,13 @@ def require(command, message):
         raise SystemExit(message)
 
 
-def write_env(args):
-    secret = f"django-secret-key-local-{uuid.uuid4().hex}"
+def write_env(args, python_path):
+    result = subprocess.run(
+        [str(python_path), "-c", "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"],
+        capture_output=True, text=True, check=True,
+    )
+    secret = result.stdout.strip()
+
     content = f"""SECRET_KEY={secret}
 DEBUG=True
 
@@ -40,6 +45,7 @@ DB_HOST={args.db_host}
 DB_PORT={args.db_port}
 
 TOMTOM_API_KEY={args.tomtom_api_key}
+TOMTOM_SECRET_KEY={args.tomtom_secret_key}
 """
     (ROOT / ".env").write_text(content, encoding="utf-8")
 
@@ -119,7 +125,8 @@ def main():
     parser.add_argument("--db-password", default="root")
     parser.add_argument("--db-host", default="localhost")
     parser.add_argument("--db-port", default="3306")
-    parser.add_argument("--tomtom-api-key", default="")
+    parser.add_argument("--tomtom-api-key", default="skP5QP3Pf59qpi19aeRyVtPhrMlhoiC3")
+    parser.add_argument("--tomtom-secret-key", default="")
     parser.add_argument("--no-runserver", action="store_true")
     args = parser.parse_args()
 
@@ -137,7 +144,7 @@ def main():
 
     # 2. Archivo .env
     print("\n==> Generando .env")
-    write_env(args)
+    write_env(args, VENV_PYTHON)
 
     # 3. Crear BD vacia (sin tablas)
     mysql_create_db(args)
