@@ -460,7 +460,7 @@ MoviliData OS busca contribuir a:
 
 # 👨‍💻 Autor
 
-**Legend Plus**
+**Manuel Rojas**
 
 Tecnólogo ADSO – SENA
 
