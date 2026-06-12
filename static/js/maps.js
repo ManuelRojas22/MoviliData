@@ -218,7 +218,7 @@ function comunaSlug(name) {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
-function addZoneMarker(layer, zone, label) {
+function addZoneMarker(layer, zone, label, noPopup) {
   try {
     const score = zone.risk_score != null ? Number(zone.risk_score) : zone.congestion_level != null ? Number(zone.congestion_level) : zone.predicted_congestion != null ? Number(zone.predicted_congestion) : 50;
     const lat = Number(zone.lat);
@@ -240,8 +240,10 @@ function addZoneMarker(layer, zone, label) {
       fillColor: riskColor(score),
       fillOpacity: 0.85
     }).addTo(layer)
-      .bindTooltip(`<strong>☁️ ${zname}</strong><br>${label}${badge ? `<br><span style="font-size:.7rem;color:#94a3b8;">${badge} ${src}</span>` : ""}`,{sticky:true,className:'clima-tooltip'})
-      .bindPopup(`<div style="min-width:180px;text-align:center;"><strong style="font-size:.95rem;color:#f4f7fb;">📍 ${zname}</strong><br><span style="font-size:.75rem;color:#94a3b8;">Comuna de Medellín</span><hr style="border-color:#334155;margin:8px 0;"><table style="width:100%;font-size:.78rem;"><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚗 Congestión</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${congestion}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚡ Velocidad</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${speed} km/h</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚨 Incidentes</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${incidents}</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🌧️ Lluvia</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${rain}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚠️ Riesgo</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${score}%</td></tr></table><hr style="border-color:#334155;margin:8px 0;"><a href="/comuna/${slug}/" style="display:inline-block;background:#38bdf8;color:#0a0f1a;padding:6px 20px;border-radius:20px;text-decoration:none;font-weight:700;font-size:.82rem;">Ver detalle →</a></div>`,{className:'clima-tooltip',maxWidth:280});
+      .bindTooltip(`<strong>☁️ ${zname}</strong><br>${label}${badge ? `<br><span style="font-size:.7rem;color:#94a3b8;">${badge} ${src}</span>` : ""}`,{sticky:true,className:'clima-tooltip'});
+    if (!noPopup) {
+      marker.bindPopup(`<div style="min-width:180px;text-align:center;"><strong style="font-size:.95rem;color:#f4f7fb;">📍 ${zname}</strong><br><span style="font-size:.75rem;color:#94a3b8;">Comuna de Medellín</span><hr style="border-color:#334155;margin:8px 0;"><table style="width:100%;font-size:.78rem;"><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚗 Congestión</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${congestion}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚡ Velocidad</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${speed} km/h</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚨 Incidentes</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${incidents}</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🌧️ Lluvia</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${rain}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚠️ Riesgo</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${score}%</td></tr></table><hr style="border-color:#334155;margin:8px 0;"><a href="/comuna/${slug}/" style="display:inline-block;background:#38bdf8;color:#0a0f1a;padding:6px 20px;border-radius:20px;text-decoration:none;font-weight:700;font-size:.82rem;">Ver detalle →</a></div>`,{className:'clima-tooltip',maxWidth:280});
+    }
     marker.on('tooltipopen',function(e){
       const el = e.tooltip._container;
       if(el){el.style.setProperty('background','#1e293b','important');el.style.setProperty('border','1px solid #334155','important');el.style.setProperty('border-radius','8px','important');el.style.setProperty('box-shadow','0 4px 16px rgba(0,0,0,.5)','important');el.style.setProperty('padding','8px 12px','important');el.style.setProperty('color','#f4f7fb','important');el.style.setProperty('font-family','inherit','important');el.style.setProperty('font-size','.8rem','important');el.style.setProperty('line-height','1.5','important');}
@@ -255,7 +257,7 @@ function addRoutePolyline(layer, points, color, label) {
     weight: 3,
     opacity: 0.7,
     dashArray: null
-  }).addTo(layer).bindPopup(label).bindTooltip(label,{sticky:true,className:'clima-tooltip'});
+  }).addTo(layer).bindTooltip(label,{sticky:true,className:'clima-tooltip'});
   L.circleMarker(points[0], {
     radius: 6,
     color: "#fff",
@@ -291,7 +293,7 @@ async function renderRiskMap(id) {
       }).addTo(map);
     }
     data.risk_zones.forEach(z => {
-      addZoneMarker(layer, z, `${z.risk_score}%<table><tr><td class="label">📊 Nivel</td><td class="value">${z.risk_score>=75?'Alto':z.risk_score>=55?'Medio-Alto':z.risk_score>=30?'Medio-Bajo':'Bajo'}</td></tr><tr><td class="label">🚗 Congestión</td><td class="value">${z.congestion}%</td></tr><tr><td class="label">🚨 Incidentes</td><td class="value">${z.incidents}</td></tr></table>`);
+      addZoneMarker(layer, z, `${z.risk_score}%<table><tr><td class="label">📊 Nivel</td><td class="value">${z.risk_score>=75?'Alto':z.risk_score>=55?'Medio-Alto':z.risk_score>=30?'Medio-Bajo':'Bajo'}</td></tr><tr><td class="label">🚗 Congestión</td><td class="value">${z.congestion}%</td></tr></table>`, true);
     });
     addComunaClickHandler(map, layer);
     MoviliLive.flash(document.getElementById(id));
@@ -367,8 +369,7 @@ async function renderPredictionMap(id, hour = 18) {
         fillColor: congestionColor(congestion),
         fillOpacity: 0.85
       }).addTo(layer)
-        .bindTooltip(`<h4 style="margin:0 0 4px;font-size:.85rem;">${p.zone}</h4><table style="font-size:.75rem;"><tr><td style="color:#94a3b8;padding-right:8px;">Congestión</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${congestion}%</td></tr><tr><td style="color:#94a3b8;padding-right:8px;">Lluvia</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${rain}%</td></tr><tr><td style="color:#94a3b8;padding-right:8px;">Confianza</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${Math.round(confidence*100)}%</td></tr></table>`,{sticky:true,className:'clima-tooltip'})
-        .bindPopup(`<div style="min-width:180px;text-align:center;"><strong style="font-size:.95rem;color:#f4f7fb;">📍 ${p.zone}</strong><br><span style="font-size:.75rem;color:#94a3b8;">Predicción de congestión</span><hr style="border-color:#334155;margin:8px 0;"><table style="width:100%;font-size:.78rem;"><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚗 Congestión</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${congestion}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🌧️ Lluvia</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${rain}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">📊 Confianza</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">${Math.round(confidence*100)}%</td></tr></table><hr style="border-color:#334155;margin:8px 0;"><a href="/comuna/${slug}/" style="display:inline-block;background:#38bdf8;color:#0a0f1a;padding:6px 20px;border-radius:20px;text-decoration:none;font-weight:700;font-size:.82rem;">Ver detalle →</a></div>`,{className:'clima-tooltip',maxWidth:280});
+        .bindTooltip(`<h4 style="margin:0 0 4px;font-size:.85rem;">${p.zone}</h4><table style="font-size:.75rem;"><tr><td style="color:#94a3b8;padding-right:8px;">Congestión</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${congestion}%</td></tr><tr><td style="color:#94a3b8;padding-right:8px;">Lluvia</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${rain}%</td></tr><tr><td style="color:#94a3b8;padding-right:8px;">Confianza</td><td class="text-end" style="color:#f4f7fb;font-weight:600;">${Math.round(confidence*100)}%</td></tr></table>`,{sticky:true,className:'clima-tooltip'});
     });
     addComunaClickHandler(map, layer);
     MoviliLive.flash(document.getElementById(id));
