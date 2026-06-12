@@ -1,0 +1,100 @@
+{% extends "base/base.html" %}
+{% block title %}Registro | MoviliData OS{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block navbar %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block movibot %}{% endblock %}
+{% block content %}
+<a href="/" class="back-link">← Volver al inicio</a>
+<section class="auth-wrap panel">
+  <h1>Crear cuenta</h1>
+  <form method="post" id="registerForm" onsubmit="return validateRegister()">{% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Usuario</label>
+      <input class="form-control" name="username" id="regUser" required>
+      <small class="field-error" id="regUserError"></small>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Correo electronico</label>
+      <input class="form-control" name="email" type="email" id="regEmail" required>
+      <small class="field-error" id="regEmailError"></small>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contrasena</label>
+      <div class="password-wrap">
+        <input class="form-control" name="password" type="password" id="regPass" required>
+        <button type="button" class="password-toggle" id="regPassToggle" aria-label="Mostrar contrasena" tabindex="-1">👁️</button>
+      </div>
+      <small class="field-error" id="regPassError"></small>
+      <small class="field-hint" style="color:var(--text-muted);font-size:.7rem;margin-top:2px;display:block;">Minimo 6 caracteres</small>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Confirmar contrasena</label>
+      <div class="password-wrap">
+        <input class="form-control" name="password_confirm" type="password" id="regPassConfirm" required>
+        <button type="button" class="password-toggle" id="regPassConfirmToggle" aria-label="Mostrar contrasena" tabindex="-1">👁️</button>
+      </div>
+      <small class="field-error" id="regPassConfirmError"></small>
+    </div>
+    <button class="btn btn-primary w-100">Registrarse</button>
+    <p class="auth-switch">¿Ya tienes cuenta? <a href="/users/login/">Inicia sesion aqui</a></p>
+  </form>
+</section>
+<script>
+function validateRegister() {
+  const fields = [
+    {id: "regUser", error: "regUserError", msg: "Ingresa tu usuario"},
+    {id: "regEmail", error: "regEmailError", msg: "Ingresa tu correo electronico"},
+    {id: "regPass", error: "regPassError", msg: "Ingresa una contrasena"},
+    {id: "regPassConfirm", error: "regPassConfirmError", msg: "Confirma tu contrasena"},
+  ];
+  let valid = true;
+  document.querySelectorAll(".field-error").forEach(e => e.textContent = "");
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (!el.value.trim()) {
+      document.getElementById(f.error).textContent = f.msg;
+      valid = false;
+    }
+  });
+  const pass = document.getElementById("regPass").value;
+  const confirm = document.getElementById("regPassConfirm").value;
+  if (pass && pass.length < 6) {
+    document.getElementById("regPassError").textContent = "Minimo 6 caracteres";
+    valid = false;
+  }
+  if (pass && confirm && pass !== confirm) {
+    document.getElementById("regPassConfirmError").textContent = "Las contrasenas no coinciden";
+    valid = false;
+  }
+  const email = document.getElementById("regEmail").value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById("regEmailError").textContent = "Correo electronico invalido";
+    valid = false;
+  }
+  if (!valid && window.Swal) {
+    Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Corrige los errores antes de continuar", showConfirmButton: false, timer: 3500, background: "#101b2c", color: "#f4f7fb", iconColor: "#f5b84b" });
+  }
+  return valid;
+}
+document.querySelectorAll(".password-toggle").forEach(btn => {
+  btn.addEventListener("click", function() {
+    const wrapper = this.closest(".password-wrap");
+    const input = wrapper.querySelector("input");
+    if (input.type === "password") {
+      input.type = "text";
+      this.textContent = "🙈";
+    } else {
+      input.type = "password";
+      this.textContent = "👁️";
+    }
+  });
+});
+</script>
+<style>
+.password-wrap{position:relative;display:flex;align-items:center}
+.password-wrap .form-control{padding-right:36px}
+.password-toggle{position:absolute;right:4px;background:none;border:none;cursor:pointer;padding:4px 8px;font-size:.85rem;line-height:1;color:var(--text-muted);transition:color .15s}
+.password-toggle:hover{color:var(--text-bright)}
+</style>
+{% endblock %}

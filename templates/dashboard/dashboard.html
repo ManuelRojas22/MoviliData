@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+{% block title %}Dashboard | MoviliData OS{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Operacion urbana</p><h1>Dashboard inteligente</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+
+<section class="dashboard-grid mt-4">
+  <div class="panel map-panel"><h2>Mapa operativo</h2><div id="mainMap" class="map-large"><div class="spinner"></div></div></div>
+  <div class="panel"><h2>🚗 Velocidad promedio por zona</h2><canvas id="speedChart"></canvas><div class="spinner" id="spinner-speedChart"></div></div>
+  <div class="panel"><h2>🚧 Incidentes por zona</h2><canvas id="incidentChart"></canvas><div class="spinner" id="spinner-incidentChart"></div></div>
+  <div class="panel"><h2>Clima</h2><div id="weatherPanel" data-state="loading">
+    {% if boot and boot.weather %}
+    <div class="alert-item"><strong>{{ boot.weather.temperature }}C</strong><p>Temperatura</p></div>
+    <div class="alert-item"><strong>{{ boot.weather.precipitation_probability }}%</strong><p>Prob. lluvia</p></div>
+    {% endif %}
+  </div></div>
+
+</section>
+<script>
+// Register chart render on DOMContentLoaded (runs after deferred scripts)
+document.addEventListener("DOMContentLoaded", () => {
+  ['speedChart','incidentChart'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.dataset.lazyLoaded='1';
+  });
+  if(window.renderCoreCharts)renderCoreCharts();
+});
+// Fetch bootstrap data and render metrics/weather
+(async()=>{
+  const fromCache = window.__prefetchCache && window.__prefetchCache["/api/bootstrap"];
+  let d;
+  if (fromCache && Date.now() - fromCache.ts < 10000) {
+    d = fromCache.data;
+  } else {
+    try {
+      const r=await fetch("/api/bootstrap?_="+Date.now(),{headers:{Accept:"application/json"}});
+      d=await r.json();
+    } catch(e){return}
+  }
+  window.__bootData=d;
+  const wp=document.getElementById("weatherPanel");
+  if(wp&&d.weather){
+    const wd=d.weather;
+    const h=`
+      <div class="alert-item"><strong>🌡️ ${wd.temperature}°C</strong><p>Temperatura</p></div>
+      <div class="alert-item"><strong>💧 ${wd.humidity||'—'}%</strong><p>Humedad</p></div>
+      <div class="alert-item"><strong>🌧️ ${wd.precipitation_probability}%</strong><p>Prob. lluvia</p></div>
+      <div class="alert-item"><strong>💨 ${wd.wind_speed||'—'} km/h</strong><p>Viento</p></div>`;
+    if(wp.dataset.lastHtml!==h){wp.dataset.lastHtml=h;wp.innerHTML=h;}
+    wp.dataset.state="loaded";
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,365 @@
+{% extends "base/base.html" %}
+{% block title %}Zonas de Riesgo | MoviliData OS{% endblock %}
+{% block content %}
+<style>
+.filter-body{display:flex;gap:12px;flex:1;min-height:0}.filter-side{width:260px;flex-shrink:0;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}.filter-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:800;margin:0 0 6px}.filter-side .form-check-label{font-size:.82rem;color:var(--text-soft)}.filter-side .form-range{accent-color:var(--brand-cyan)}.filter-value{float:right;color:var(--brand-cyan);font-weight:800}.map-wrap{position:relative;flex:1;min-width:0;min-height:400px}.map-caption{position:absolute;top:12px;left:12px;z-index:500;background:rgba(9,16,28,.82);border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 10px;color:var(--text-soft);font-size:.78rem;backdrop-filter:blur(8px)}#riskMap{height:100%;min-height:400px}.panel.map-panel{min-height:calc(100vh - 160px)}.zone-card{border:1px solid var(--line);border-radius:var(--radius-md);padding:10px;background:rgba(255,255,255,.02)}@media(max-width:768px){.filter-body{flex-direction:column}.filter-side{width:100%;max-height:260px}#riskMap{min-height:350px}}
+</style>
+<div class="page-head"><div><p class="eyebrow">Geoanalitica</p><h1>Zonas criticas y heatmaps</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="panel map-panel" style="display:flex;flex-direction:column;">
+  <div class="filter-body">
+    <aside class="filter-side" id="riskFilters">
+      <div><p class="filter-title">Indicadores de riesgo</p><div id="riskIndicatorSummary" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div></div>
+      <div><p class="filter-title">Incidencias viales</p><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="riskShowIncidents"><label class="form-check-label" for="riskShowIncidents">Mostrar en mapa</label></div><div id="incidentTypeFilters"><div class="form-check"><input class="form-check-input incident-type" type="checkbox" id="sevJam" value="6" checked><label class="form-check-label" for="sevJam"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f97316;margin-right:6px;vertical-align:middle;"></span>🚦 Congestión</label></div><div class="form-check"><input class="form-check-input incident-type" type="checkbox" id="sevClosed" value="8" checked><label class="form-check-label" for="sevClosed"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#7c3aed;margin-right:6px;vertical-align:middle;"></span>🚫 Vía cerrada</label></div><div class="form-check"><input class="form-check-input incident-type" type="checkbox" id="sevWorks" value="9" checked><label class="form-check-label" for="sevWorks"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#38bdf8;margin-right:6px;vertical-align:middle;"></span>🚧 Obras</label></div><div class="form-check"><input class="form-check-input risk-overlay-type" type="checkbox" id="riskDelay" checked><label class="form-check-label" for="riskDelay"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--brand-cyan);margin-right:6px;vertical-align:middle;"></span>⏱️ Riesgo de retrasos</label></div><div class="form-check"><input class="form-check-input risk-overlay-type" type="checkbox" id="riskRoute" checked><label class="form-check-label" for="riskRoute"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#a78bfa;margin-right:6px;vertical-align:middle;"></span>🛣️ Riesgo en ruta</label></div></div><div id="incidentStats" style="display:none;margin-top:8px;">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+    <div class="spinner" id="incStatsSpinner" style="width:14px;height:14px;border-width:2px;"></div>
+    <span>Estadísticas</span>
+    <button id="incModalBtn" class="btn btn-sm btn-outline-light" style="margin-left:auto;font-size:.85rem;padding:0 4px;" title="Ver detalle por comuna">👁️</button>
+  </div>
+  <div id="incWarning" style="font-size:.7rem;color:var(--text-muted);display:none;">Datos de incidentes no disponibles en este momento.</div>
+  <div style="display:flex;flex-direction:column;gap:2px;font-size:.78rem;" id="incStatsBody"></div>
+  <div style="font-size:.6rem;color:var(--text-muted);margin-top:6px;line-height:1.4;"><span id="incUpdated"></span></div>
+  <div style="font-size:.6rem;color:var(--text-muted);margin-top:2px;line-height:1.4;">Fuente: TomTom Traffic</div>
+</div>
+      <div class="zone-card"><p class="filter-title">Zonas</p><div id="riskZoneList"></div></div>
+      <button class="btn btn-sm btn-outline-light" type="button" id="riskReset">Resetear filtros</button>
+    </aside>
+    <div class="map-wrap"><div class="map-caption" id="riskCaption">Mostrando todas las zonas de riesgo</div><div id="riskMap" class="map-xl"><div class="spinner"></div></div><div style="position:absolute;bottom:44px;right:12px;z-index:500;background:rgba(9,16,28,.82);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 10px;backdrop-filter:blur(6px);min-width:110px;"><p style="font-size:.62rem;color:var(--text-muted);font-weight:800;margin:0 0 4px;text-transform:uppercase;letter-spacing:.07em;">Leyenda</p><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="width:10px;height:10px;border-radius:50%;background:#38bdf8;display:inline-block;"></span><span style="font-size:.68rem;color:var(--text-soft);">Bajo</span></div><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span><span style="font-size:.68rem;color:var(--text-soft);">Medio</span></div><div style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span><span style="font-size:.68rem;color:var(--text-soft);">Alto</span></div></div><div style="position:absolute;bottom:12px;right:12px;z-index:500;display:flex;align-items:center;gap:6px;background:rgba(9,16,28,.75);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 9px;backdrop-filter:blur(6px);"><span style="font-size:.65rem;color:var(--text-muted);font-weight:700;letter-spacing:.06em;">MoviliData OS</span><span style="font-size:.6rem;color:#ef4444;">⚠️ Zonas críticas</span></div></div>
+  </div>
+</section>
+<div id="incModalOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s,backdrop-filter .25s;" onclick="if(event.target===this)closeIncModal()"><div id="incModalContent" style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);max-width:520px;width:90%;max-height:80vh;overflow-y:auto;padding:20px;transform:scale(.92);opacity:0;transition:transform .25s,opacity .25s;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><span style="font-size:.85rem;color:var(--text-bright);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Incidentes por comuna</span><button onclick="closeIncModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">✕</button></div><div id="incModalBody" style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;"></div></div></div>
+<script>
+(async()=>{
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  if (c && Date.now() - c.ts < 10000) { window.__bootData = c.data; return; }
+  try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});window.__bootData=await r.json()}catch(e){}
+})();
+</script>
+{% endblock %}
+{% block scripts %}
+<script>
+(()=>{
+  let cache=null, incidentLayer=null, delayRiskLayer=null, routeRiskLayer=null, zones=[], incInterval=null, __incData=null;
+  const selected=()=>new Set([...document.querySelectorAll("#riskZoneList input:checked")].map(i=>i.value));
+  const data=async()=>cache||(cache=await MoviliAPI.maps());
+  function incColor(cat){
+    const colors={6:"#f97316",8:"#7c3aed",9:"#38bdf8"};
+    return colors[cat]||"#94a3b8";
+  }
+  function incLabel(cat){
+    const labels={6:"🚦 Congestión",8:"🚫 Vía cerrada",9:"🚧 Obra"};
+    return labels[cat]||"Otro";
+  }
+  function riskLevelClass(lvl){
+    return lvl==='Alto'?'risk-alto':lvl==='Medio'?'risk-medio':lvl==='Bajo'?'risk-bajo':'risk-na';
+  }
+  const COMUNA_NAMES={{ comunas_json|safe }};
+  const COMUNA_COORDS={{ comunas_coords_json|safe }};
+  function riskOverlayColor(level){
+    if(level==='Alto') return '#ef4444';
+    if(level==='Medio') return '#f59e0b';
+    return '#38bdf8';
+  }
+  function riskOverlayRadius(value){
+    if(value>=70) return 22;
+    if(value>=40) return 16;
+    return 10;
+  }
+  function renderRiskIndicators(d){
+    const el=document.getElementById("riskIndicatorSummary");
+    if(!el)return;
+    if(!d||!d.delay_risk){el.innerHTML='<div style="font-size:.72rem;color:var(--text-muted);">Cargando...</div>';return;}
+    const dr=d.delay_risk, rr=d.route_risk;
+    const dv=(dr.value!==null?dr.value+'%':'—'), dl=dr.level||'Datos insuficientes';
+    const rv=(rr.value!==null?rr.value+'%':'—'), rl=rr.level||'Datos insuficientes';
+    el.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:var(--radius-sm);background:rgba(255,255,255,.04);">
+        <span style="font-size:.75rem;color:var(--text-soft);">⏱️ Riesgo retrasos</span>
+        <span style="font-size:.8rem;font-weight:700;color:var(--text-bright);">${dv}</span>
+        <span class="risk-level ${riskLevelClass(dl)}">${dl}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:var(--radius-sm);background:rgba(255,255,255,.04);">
+        <span style="font-size:.75rem;color:var(--text-soft);">🛣️ Riesgo en ruta</span>
+        <span style="font-size:.8rem;font-weight:700;color:var(--text-bright);">${rv}</span>
+        <span class="risk-level ${riskLevelClass(rl)}">${rl}</span>
+      </div>`;
+  }
+  function formatFecha(f){
+    if(!f) return '';
+    try{
+      var d;
+      if(typeof f === 'number' || /^\d+$/.test(String(f))){
+        d=new Date(Number(f));
+      }else{
+        d=new Date(f);
+      }
+      if(isNaN(d.getTime())) return f;
+      return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    }catch(e){return f||'';}
+  }
+  async function loadIncidentStats(){
+    const sp=document.getElementById("incStatsSpinner");
+    if(sp) sp.style.display="inline-block";
+    try{
+      const r=await fetch("/api/incidents?_="+Date.now());
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      const d=await r.json();
+      if(!d) return;
+      __incData=d;
+      renderIncidentStats(d);
+    }catch(e){console.warn("[incidents] fetch error",e);}
+    finally{if(sp) sp.style.display="none";}
+  }
+  function renderIncidentStats(d){
+    if(!d) return;
+    const body=document.getElementById("incStatsBody");
+    if(!body) return;
+    renderRiskIndicators(d);
+    body.innerHTML='';
+    function row(label, val, color){
+      const r=document.createElement("div");
+      r.style.display="flex"; r.style.justifyContent="space-between"; r.style.alignItems="center"; r.style.padding="3px 0";
+      const l=document.createElement("span");
+      l.innerHTML=label;
+      l.style.color=color; l.style.fontWeight="700"; l.style.fontSize=".78rem";
+      const v=document.createElement("span");
+      v.textContent=val;
+      v.style.color="var(--text-bright)"; v.style.fontWeight="700"; v.style.fontSize=".82rem";
+      r.appendChild(l); r.appendChild(v); body.appendChild(r);
+    }
+    row('🚦 Congestión', d.jams||0, '#f97316');
+    row('🚫 Vías cerradas', d.road_closed||0, '#7c3aed');
+    row('🚧 Obras', d.road_works||0, '#38bdf8');
+    const sep=document.createElement("div");
+    sep.style.borderTop="1px solid rgba(255,255,255,.08)"; sep.style.margin="4px 0 2px"; body.appendChild(sep);
+    row('📊 Total', d.total||0, 'var(--text-bright)');
+    const el7=document.getElementById("incUpdated");
+    if(el7) el7.textContent=new Date().toLocaleString("es-CO",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    const warn=document.getElementById("incWarning");
+    if(warn) warn.style.display=d.ok?"none":"block";
+  }
+  function openIncModal(){
+    const overlay=document.getElementById("incModalOverlay");
+    const body=document.getElementById("incModalBody");
+    if(!overlay||!body||!__incData) return;
+    const allowed=selected();
+    const byComuna=__incData.by_comuna||{};
+    let entries=COMUNA_NAMES.map(n=>{
+      const d=byComuna[n]||{total:0,jams:0,road_closed:0,road_works:0};
+      return [n,d];
+    });
+    if(allowed.size>0) entries=entries.filter(([n])=>allowed.has(n));
+    const allIncs=__incData.incidents||[];
+    entries.sort((a,b)=>b[1].total-a[1].total);
+    body.innerHTML=entries.map(([name,data])=>{
+      const cats=[];
+      cats.push(`<span style="color:#f97316">🚦 ${data.jams||0} cong.</span>`);
+      if(data.road_closed) cats.push(`<span style="color:#7c3aed">🚫 ${data.road_closed} vías</span>`);
+      if(data.road_works) cats.push(`<span style="color:#38bdf8">🚧 ${data.road_works} obras</span>`);
+      const indiv=allIncs.filter(a=>a.comuna===name).slice(0,10);
+      let indivHtml='';
+      if(indiv.length){
+        indivHtml='<div style="margin-top:6px;border-top:1px solid rgba(255,255,255,.06);padding-top:4px;">'+
+          indiv.map(a=>{
+            const c=a.color||'#94a3b8';
+            return `<div style="display:flex;align-items:center;gap:5px;padding:2px 0;font-size:.72rem;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};flex-shrink:0;"></span><span style="color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.icon||''} ${a.description||a.category||''}</span><span style="color:var(--text-muted);font-size:.65rem;margin-left:auto;white-space:nowrap;">${a.fecha_hora||''}</span></div>`;
+          }).join('')+'</div>';
+        if(allIncs.filter(a=>a.comuna===name).length>10) indivHtml+=`<div style="font-size:.65rem;color:var(--text-muted);text-align:center;">+${allIncs.filter(a=>a.comuna===name).length-10} más</div>`;
+      }
+      return `<div style="padding:8px 10px;background:rgba(255,255,255,.04);border-radius:var(--radius-sm);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><span style="color:var(--text-bright);font-weight:600;">${name}</span><br><span style="color:var(--text-muted);font-size:.72rem;">${cats.length?cats.join(' · '):'sin incidentes'}</span></div><span style="color:var(--text-bright);font-weight:700;font-size:.9rem;">${data.total}</span></div>${indivHtml}</div>`;
+    }).join('');
+    overlay.style.opacity="1";
+    overlay.style.pointerEvents="auto";
+    requestAnimationFrame(()=>{const c=document.getElementById("incModalContent");if(c){c.style.transform="scale(1)";c.style.opacity="1";}});
+  }
+  window.closeIncModal=function(){
+    const c=document.getElementById("incModalContent");
+    if(c){c.style.transform="scale(.92)";c.style.opacity="0";}
+    const el=document.getElementById("incModalOverlay");
+    if(el){el.style.opacity="0";el.style.pointerEvents="none";}
+  }
+  function stopIncInterval(){
+    if(incInterval){clearInterval(incInterval);incInterval=null;}
+  }
+  function startIncInterval(){
+    stopIncInterval();
+    loadIncidentStats();
+    incInterval=setInterval(loadIncidentStats,60000);
+  }
+  async function applyRiskFilters(){
+    const map=createOsmMap("riskMap"); if(!map) return;
+    if(incidentLayer){map.removeLayer(incidentLayer);incidentLayer=null;}
+    const mode=document.querySelector("input[name='riskMode']:checked")?.value||"both";
+    const allowed=selected();
+    const filtered=((await data()).risk_zones||[]).filter(z=>allowed.size===0||allowed.has(z.name));
+    const layer=dynamicLayer("riskMap"); if(!layer) return;
+    if((mode==="both"||mode==="heat")&&L.heatLayer) liveMaps.riskMap.heat=L.heatLayer(filtered.map(z=>[z.lat,z.lng,z.heat]),{radius:20,blur:15,gradient:{.2:"#38bdf8",.55:"#f59e0b",.85:"#ef4444"}}).addTo(map);
+    if(mode==="both"||mode==="markers") filtered.forEach(z=>{
+      let extraInc='';
+      if(__incData&&__incData.by_comuna&&__incData.by_comuna[z.name]){
+        const id=__incData.incidents.filter(a=>a.comuna===z.name);
+        if(id.length){
+          extraInc='<tr><td colspan="2" style="padding-top:6px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Incidencias viales</td></tr>';
+          id.slice(0,5).forEach(a=>{
+            const c=a.color||'#94a3b8';
+            extraInc+=`<tr><td colspan="2" style="padding:2px 0;font-size:.75rem;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:5px;vertical-align:middle;"></span>${a.icon||''} ${a.description||a.category||'Incidente'} <span style="color:var(--text-muted);font-size:.65rem;">${a.fecha_hora||''}</span></td></tr>`;
+          });
+          if(id.length>5) extraInc+=`<tr><td colspan="2" style="font-size:.7rem;color:var(--text-muted);text-align:center;">+${id.length-5} más</td></tr>`;
+        }
+      }
+      const drl=z.delay_risk_level||'—'; const drv=z.delay_risk_value!==null&&z.delay_risk_value!==undefined?z.delay_risk_value+'%':'—';
+      const rrl=z.route_risk_level||'—'; const rrv=z.route_risk_value!==null&&z.route_risk_value!==undefined?z.route_risk_value+'%':'—';
+      addZoneMarker(layer,z,`${z.risk_score}%<table><tr><td class="label">📊 Nivel</td><td class="value">${z.risk_score>=75?'🔴 Alto':z.risk_score>=55?'🟠 Medio-Alto':z.risk_score>=30?'🟡 Medio-Bajo':'🟢 Bajo'}</td></tr><tr><td class="label">⏱️ Riesgo retrasos</td><td class="value">${drv} (${drl})</td></tr><tr><td class="label">🛣️ Riesgo en ruta</td><td class="value">${rrv} (${rrl})</td></tr><tr><td class="label">🚗 Congestión</td><td class="value">${z.congestion}%</td></tr><tr><td class="label">🚫 Vías cerradas</td><td class="value">${z.closures||0}</td></tr><tr><td class="label">🚧 Obras</td><td class="value">${z.works||0}</td></tr><tr><td class="label">⚡ Velocidad</td><td class="value">${z.average_speed||'N/A'} km/h</td></tr><tr><td class="label">📌 Razón</td><td class="value" style="max-width:140px;white-space:normal;">${z.reason||'Sin datos adicionales'}</td></tr>${extraInc}</table>`);
+    });
+    const showInc=document.getElementById("riskShowIncidents").checked;
+    let incCount=0;
+    if(showInc&&__incData){
+      const catAllowed=new Set([...document.querySelectorAll(".incident-type:checked")].map(i=>Number(i.value)));
+      const incs=(__incData.incidents||[]).filter(a=>catAllowed.has(a.icon_category)&&a.icon_category>5);
+      incCount=incs.length;
+      if(incCount){
+        incidentLayer=L.layerGroup().addTo(map);
+        incs.forEach(a=>{
+          const c=incColor(a.icon_category);
+          const label=incLabel(a.icon_category);
+          const desc=a.description||'';
+          const from=a.from||'';
+          const to=a.to||'';
+          const start=a.start_time||'';
+          const fechaHora=a.fecha_hora||a.start_time||'';
+          L.circleMarker([Number(a.lat),Number(a.lng)],{radius:6,color:"#fff",weight:1.5,fillColor:c,fillOpacity:0.8})
+            .addTo(incidentLayer)
+            .bindTooltip(label+`<br><span style="color:#94a3b8;font-size:.75rem;">${from||desc||''}</span>`,{sticky:true,className:'clima-tooltip'})
+            .bindPopup(`<div style="min-width:200px;"><strong style="font-size:.9rem;color:#f4f7fb;">${label}</strong>${desc?`<br><span style="color:#94a3b8;font-size:.78rem;">${desc}</span>`:''}<hr style="border-color:#334155;margin:6px 0;"><div style="font-size:.75rem;color:#94a3b8;">${from?`📍 ${from}<br>`:''}${to?`➡️ ${to}<br>`:''}${fechaHora?`🕐 ${fechaHora}`:''}${a.magnitude?`<br>⏱ Retraso: ${a.magnitude}`:''}</div></div>`,{className:'clima-tooltip',maxWidth:300});
+        });
+      }
+    }
+    const showDelay=document.getElementById("riskDelay").checked;
+    const showRoute=document.getElementById("riskRoute").checked;
+    if(delayRiskLayer){map.removeLayer(delayRiskLayer);delayRiskLayer=null;}
+    if(routeRiskLayer){map.removeLayer(routeRiskLayer);routeRiskLayer=null;}
+    let riskOverlayCount=0;
+    if(showInc&&__incData&&__incData.by_comuna){
+      if(showDelay){
+        delayRiskLayer=L.layerGroup().addTo(map);
+        COMUNA_NAMES.forEach(n=>{
+          const bc=__incData.by_comuna[n];
+          if(!bc||(bc.delay_risk_value===undefined&&bc.delay_risk_level===undefined)) return;
+          const coords=COMUNA_COORDS[n];
+          if(!coords) return;
+          const val=bc.delay_risk_value!==undefined?bc.delay_risk_value:0;
+          const lvl=bc.delay_risk_level||'Bajo';
+          const color='#f97316';
+          const radius=riskOverlayRadius(val);
+          riskOverlayCount++;
+          const circle=L.circleMarker(coords,{radius,color:'#fff',weight:1.5,fillColor:color,fillOpacity:0.45}).addTo(delayRiskLayer);
+          const congestion=bc.jams||0;
+          const cierres=bc.road_closed||0;
+          const obras=bc.road_works||0;
+          circle.bindPopup(`
+            <div style="min-width:180px;">
+              <strong style="font-size:.9rem;color:#f4f7fb;">⏱️ ${n}</strong>
+              <hr style="border-color:#334155;margin:6px 0;">
+              <div style="font-size:.78rem;color:#94a3b8;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span>Nivel de riesgo</span><span style="color:${color};font-weight:700;">${lvl}</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span>Porcentaje</span><span style="color:var(--text-bright);font-weight:700;">${val}%</span></div>
+                <hr style="border-color:#334155;margin:4px 0;">
+                <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:3px;">Factores que influyen:</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>🚦 Congestión</span><span style="color:var(--text-bright);">${congestion} zonas</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>🚫 Vías cerradas</span><span style="color:var(--text-bright);">${cierres}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span>🚧 Obras</span><span style="color:var(--text-bright);">${obras}</span></div>
+              </div>
+            </div>
+          `,{className:'clima-tooltip',maxWidth:300});
+          circle.bindTooltip(`⏱️ ${n}: ${lvl} (${val}%)`,{sticky:true,className:'clima-tooltip'});
+        });
+      }
+      if(showRoute){
+        routeRiskLayer=L.layerGroup().addTo(map);
+        COMUNA_NAMES.forEach(n=>{
+          const bc=__incData.by_comuna[n];
+          if(!bc||(bc.route_risk_value===undefined&&bc.route_risk_level===undefined)) return;
+          const coords=COMUNA_COORDS[n];
+          if(!coords) return;
+          const val=bc.route_risk_value!==undefined?bc.route_risk_value:0;
+          const lvl=bc.route_risk_level||'Bajo';
+          const color=riskOverlayColor(lvl);
+          const radius=riskOverlayRadius(val);
+          riskOverlayCount++;
+          const circle=L.circleMarker(coords,{radius,color:'#fff',weight:1.5,fillColor:color,fillOpacity:0.45}).addTo(routeRiskLayer);
+          const congestion=bc.jams||0;
+          const cierres=bc.road_closed||0;
+          const obras=bc.road_works||0;
+          circle.bindPopup(`
+            <div style="min-width:180px;">
+              <strong style="font-size:.9rem;color:#f4f7fb;">🛣️ ${n}</strong>
+              <hr style="border-color:#334155;margin:6px 0;">
+              <div style="font-size:.78rem;color:#94a3b8;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span>Nivel de riesgo</span><span style="color:${color};font-weight:700;">${lvl}</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span>Porcentaje</span><span style="color:var(--text-bright);font-weight:700;">${val}%</span></div>
+                <hr style="border-color:#334155;margin:4px 0;">
+                <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:3px;">Factores que influyen:</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>🚦 Congestión</span><span style="color:var(--text-bright);">${congestion} zonas</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>🚫 Vías cerradas</span><span style="color:var(--text-bright);">${cierres}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span>🚧 Obras</span><span style="color:var(--text-bright);">${obras}</span></div>
+              </div>
+            </div>
+          `,{className:'clima-tooltip',maxWidth:300});
+          circle.bindTooltip(`🛣️ ${n}: ${lvl} (${val}%)`,{sticky:true,className:'clima-tooltip'});
+        });
+      }
+    }
+    document.getElementById("riskCaption").textContent=`${filtered.length} zonas${showInc?' | '+incCount+' incidentes':''}${riskOverlayCount?' | '+riskOverlayCount+' círculos riesgo':''}`;
+    if(showInc&&__incData){const d=__incData;renderIncidentStats(d);}
+    if (window.nearestComuna) {
+      map.on("click", function(e) {
+        const c = nearestComuna(e.latlng.lat, e.latlng.lng);
+        if (!c) return;
+        L.popup({className: "clima-tooltip"})
+          .setLatLng([c.lat, c.lng])
+          .setContent(`<div style="min-width:160px;text-align:center;"><strong style="font-size:.9rem;">📍 ${c.name}</strong><br><span style="font-size:.75rem;color:#94a3b8;">Comuna de Medellín</span><br><br><a href="/comuna/${c.name.toLowerCase().replace(/\s+/g,'-')}/" style="display:inline-block;background:#38bdf8;color:#0a0f1a;padding:6px 16px;border-radius:20px;text-decoration:none;font-weight:700;font-size:.8rem;">Ver detalle →</a></div>`)
+          .openOn(map);
+      });
+    }
+    MoviliLive.flash(document.getElementById("riskMap"));
+  }
+  window.renderRiskMap=()=>applyRiskFilters();
+  document.addEventListener("DOMContentLoaded",async()=>{
+    window.renderRiskMap=()=>applyRiskFilters();
+    const imb=document.getElementById("incModalBtn");
+    if(imb)imb.addEventListener("click",openIncModal);
+    const sz=document.getElementById("riskShowIncidents");
+    if(sz)sz.addEventListener("change",async function(){
+      const checked=this.checked;
+      document.querySelectorAll(".incident-type").forEach(i=>i.disabled=!checked);
+      document.querySelectorAll(".risk-overlay-type").forEach(i=>i.disabled=!checked);
+      const istats=document.getElementById("incidentStats");
+      if(istats) istats.style.display=checked?"block":"none";
+      if(checked){
+        await loadIncidentStats();
+        startIncInterval();
+      }else{
+        stopIncInterval();
+      }
+      applyRiskFilters();
+    });
+    let zoneData=((await MoviliAPI.bootstrap()).zones||[]);
+    if(zoneData.length===0){const md=await MoviliAPI.maps();zoneData=(md.risk_zones||[]).map(z=>({zone:z.name}));}
+    zones=zoneData.map(z=>z.zone);
+    document.getElementById("riskZoneList").innerHTML=zones.map(z=>`<div class="form-check"><input class="form-check-input" type="checkbox" value="${z}" id="risk-${z.replace(/\s/g,"")}" checked><label class="form-check-label" for="risk-${z.replace(/\s/g,"")}">${z}</label></div>`).join("");
+    document.querySelectorAll("#riskFilters input").forEach(i=>{if(i.id!=="riskShowIncidents")i.addEventListener(i.type==="range"?"input":"change",applyRiskFilters)});
+    document.getElementById("riskReset").addEventListener("click",()=>{
+      document.getElementById("riskShowIncidents").checked=true;
+      const istats=document.getElementById("incidentStats");
+      if(istats) istats.style.display="block";
+      document.querySelectorAll(".incident-type").forEach(i=>i.checked=true);
+      document.querySelectorAll(".risk-overlay-type").forEach(i=>i.checked=true);
+      document.querySelectorAll("#riskZoneList input").forEach(i=>i.checked=true);
+      applyRiskFilters()
+    });
+    if(document.getElementById("riskShowIncidents").checked){startIncInterval();}else{document.querySelectorAll(".incident-type,.risk-overlay-type").forEach(i=>i.disabled=true);}
+    applyRiskFilters();
+  });
+})();
+</script>
+{% endblock %}

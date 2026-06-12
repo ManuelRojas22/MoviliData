@@ -1,0 +1,92 @@
+{% extends "base/base.html" %}
+{% block title %}Estadisticas | MoviliData OS{% endblock %}
+{% block content %}
+<style>
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}.stat-card{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;text-align:center}.stat-card .stat-value{font-size:1.8rem;font-weight:800;color:var(--brand-cyan);line-height:1.2}.stat-card .stat-label{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}.stat-card .stat-level{font-size:.7rem;margin-top:2px}.stat-card .stat-detail{font-size:.65rem;color:var(--text-muted);margin-top:6px;border-top:1px solid var(--line);padding-top:6px;text-align:left}.stat-card .stat-detail dt{font-weight:600;color:var(--text-soft);margin-top:4px}.stat-card .stat-detail dd{margin:0 0 2px 8px;color:var(--text-muted)}.level-alto{color:#ef4444;font-weight:700}.level-medio{color:#f59e0b;font-weight:700}.level-bajo{color:#22c55e;font-weight:700}.level-na{color:#94a3b8}.risk-high{border-left:3px solid #ef4444}.risk-mid{border-left:3px solid #f59e0b}.risk-low{border-left:3px solid #22c55e}.risk-na{border-left:3px solid #94a3b8}.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:20px}.chart-grid .panel{padding:16px}.chart-grid .panel h2{font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin:0 0 12px}.zone-table-wrap{overflow-x:auto}.zone-table{width:100%;border-collapse:collapse;font-size:.82rem}.zone-table th{text-align:left;padding:8px 10px;color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line);font-weight:700}.zone-table td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--text-soft)}.zone-table tr:hover{background:rgba(56,189,248,.04)}.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700}.badge-high{background:rgba(239,68,68,.2);color:#ef4444}.badge-mid{background:rgba(245,158,11,.2);color:#f59e0b}.badge-low{background:rgba(34,197,94,.2);color:#22c55e}
+</style>
+<div class="page-head"><div><p class="eyebrow">Analitica urbana en tiempo real</p><h1>Estadisticas de Medellin</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+
+<div id="statsMetrics" class="stat-grid"></div>
+
+
+<div class="chart-grid">
+  <div class="panel"><h2>Accidentes por comuna</h2><canvas id="accidentChart"></canvas><div class="spinner" id="spinner-accidentChart"></div></div>
+  <div class="panel"><h2>Riesgo por comuna</h2><canvas id="rainChart"></canvas><div class="spinner" id="spinner-rainChart"></div></div>
+</div>
+
+<section class="panel zone-table-wrap">
+  <h2 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin:0 0 12px;">Datos en vivo por comuna</h2>
+  <table class="zone-table">
+    <thead><tr><th>📍 Comuna</th><th>🚗 Congestión</th><th>💨 Velocidad</th><th>🚨 Incidentes</th><th>⏱️ Riesgo retrasos</th><th>🛣️ Riesgo ruta</th><th>🌧️ Lluvia</th><th>📊 Estado</th></tr></thead>
+    <tbody id="statsTable"></tbody>
+  </table>
+</section>
+
+<script>
+// Register chart render on DOMContentLoaded (runs after deferred scripts)
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.renderStatisticsCharts && window.__bootData) renderStatisticsCharts(window.__bootData);
+  if (window.__bootData) { renderStatsMetrics(window.__bootData); renderStatsTable(window.__bootData); }
+});
+(async()=>{
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  let boot;
+  if (c && Date.now() - c.ts < 10000) {
+    boot = c.data;
+  } else {
+    try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});boot=await r.json()}catch(e){return}
+  }
+  window.__bootData = boot;
+  renderStatsMetrics(boot);
+  renderStatsTable(boot);
+  if (document.readyState !== 'loading' && window.renderStatisticsCharts) renderStatisticsCharts(boot);
+})();
+function renderStatsMetrics(boot){
+  const el=document.getElementById('statsMetrics');
+  if(!el||!boot||!boot.metrics)return;
+  const levelClass={'Alto':'level-alto','Medio':'level-medio','Bajo':'level-bajo','Datos insuficientes':'level-na'};
+  el.innerHTML=boot.metrics.map(m=>{
+    const lvl=m.level||'—';
+    return `<div class="stat-card ${m.level==='Alto'?'risk-high':m.level==='Medio'?'risk-mid':m.level==='Bajo'?'risk-low':'risk-na'}">
+      <div class="stat-value">${m.value}${m.unit||''}</div>
+      <div class="stat-label">${m.label}</div>
+      <div class="stat-level ${levelClass[lvl]||''}">${lvl}</div>
+    </div>`;
+  }).join('');
+  if(window.MoviliLive)MoviliLive.flash(el);
+}
+function renderStatsTable(boot){
+  const el=document.getElementById('statsTable');
+  if(!el||!boot||!boot.zones)return;
+  el.innerHTML=boot.zones.map(z=>{
+    const cls=z.congestion_level>=75?'badge-high':z.congestion_level>=55?'badge-mid':'badge-low';
+    const st=z.congestion_level>=75?'Critico':z.congestion_level>=55?'Moderado':'Normal';
+    const drv=z.delay_risk_value!==null&&z.delay_risk_value!==undefined?z.delay_risk_value+'%':'—';
+    const drl=z.delay_risk_level||'';
+    const rrv=z.route_risk_value!==null&&z.route_risk_value!==undefined?z.route_risk_value+'%':'—';
+    const rrl=z.route_risk_level||'';
+    return `<tr><td><strong>${z.zone}</strong></td><td>${z.congestion_level}%</td><td>💨 ${z.average_speed} km/h</td><td>🚨 ${z.incidents}</td><td>${drv} <small style="color:var(--text-muted);font-size:.6rem;">${drl}</small></td><td>${rrv} <small style="color:var(--text-muted);font-size:.6rem;">${rrl}</small></td><td>🌧️ ${z.rain_probability}%</td><td><span class="badge ${cls}">${st}</span></td></tr>`;
+  }).join('');
+  if(window.MoviliLive)MoviliLive.flash(el.closest('.panel')||el);
+}
+function _refreshStats() {
+  const cacheKey = "/api/bootstrap";
+  const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+  let boot;
+  if (c && Date.now() - c.ts < 10000) {
+    boot = c.data;
+  } else {
+    (async()=>{ try{const r=await fetch(cacheKey+"?_="+Date.now(),{headers:{Accept:"application/json"}});boot=await r.json();window.__bootData=boot;if(window.renderStatisticsCharts)renderStatisticsCharts(boot);renderStatsMetrics(boot);renderStatsTable(boot)}catch(e){} })();
+    return;
+  }
+  window.__bootData = boot;
+  if (window.renderStatisticsCharts) renderStatisticsCharts(boot);
+  renderStatsMetrics(boot);
+  renderStatsTable(boot);
+}
+document.addEventListener("DOMContentLoaded", () => {
+  MoviliLive.register(_refreshStats, 20000);
+});
+</script>
+{% endblock %}

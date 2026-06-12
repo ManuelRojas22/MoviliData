@@ -1,0 +1,68 @@
+{% extends "base/base.html" %}
+{% block title %}Rutas | MoviliData OS{% endblock %}
+{% block content %}
+<style>
+.map-wrap{position:relative;min-width:0}.map-caption{position:absolute;top:12px;left:12px;z-index:500;background:rgba(9,16,28,.82);border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 10px;color:var(--text-soft);font-size:.78rem;backdrop-filter:blur(8px)}.ac-dropdown{position:absolute;top:100%;left:0;right:0;z-index:9999;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);max-height:240px;overflow-y:auto;display:none}.ac-dropdown .ac-item{padding:8px 10px;cursor:pointer;color:var(--text-soft);font-size:.82rem;border-bottom:1px solid var(--line)}.ac-dropdown .ac-item:last-child{border-bottom:0}.ac-dropdown .ac-item:hover,.ac-dropdown .ac-item.active{background:var(--surface-3);color:var(--text-bright)}.ac-dropdown .ac-item .ac-sub{font-size:.7rem;color:var(--text-muted);display:block}.nh-dropdown{top:auto;margin-top:2px;max-height:200px}.ac-dropdown .ac-group-header{padding:6px 10px 4px;font-size:.7rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface-3);border-bottom:1px solid var(--line);cursor:default;pointer-events:none}.panel.mb-3{position:relative;z-index:9998}
+</style>
+<div class="page-head"><div><p class="eyebrow">Prevencion</p><h1>Rutas seguras recomendadas</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="panel mb-3">
+  <form id="routeForm" class="d-flex gap-3 align-items-end flex-wrap">
+    <div class="position-relative"><label class="form-label text-cyan small">Origen</label>
+      <div class="d-flex gap-0"><input type="text" id="routeOrigin" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Ej: El Poblado, Cra 43A #1-50, Parque Berrío..." autocomplete="off" value="{{ origin }}" style="border-top-right-radius:0;border-bottom-right-radius:0"><button class="btn btn-sm btn-outline-light border-secondary" type="button" id="originNhToggle" style="border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;width:32px;font-size:.6rem" title="Barrios">&#9660;</button></div>
+      <div id="routeOriginResults" class="ac-dropdown"></div>
+      <div id="routeOriginNh" class="ac-dropdown nh-dropdown" style="display:none">
+{% regroup neighborhoods by group as group_list %}
+{% for group in group_list %}
+<div class="ac-group-header">{{ group.grouper }}</div>
+{% for item in group.list %}
+<div class="ac-item" data-value="{{ item.name }}" data-lat="{{ item.lat_str }}" data-lng="{{ item.lng_str }}">{{ item.name }}</div>
+{% endfor %}
+{% endfor %}
+</div>
+      <input type="hidden" id="routeOriginLat" value="{{ origin_lat|default:'' }}">
+      <input type="hidden" id="routeOriginLng" value="{{ origin_lng|default:'' }}">
+    </div>
+    <div class="position-relative"><label class="form-label text-cyan small">Destino</label>
+      <div class="d-flex gap-0"><input type="text" id="routeDest" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Ej: El Poblado, Cra 43A #1-50, Parque Berrío..." autocomplete="off" value="{{ destination }}" style="border-top-right-radius:0;border-bottom-right-radius:0"><button class="btn btn-sm btn-outline-light border-secondary" type="button" id="destNhToggle" style="border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;width:32px;font-size:.6rem" title="Barrios">&#9660;</button></div>
+      <div id="routeDestResults" class="ac-dropdown"></div>
+      <div id="routeDestNh" class="ac-dropdown nh-dropdown" style="display:none">
+{% regroup neighborhoods by group as group_list %}
+{% for group in group_list %}
+<div class="ac-group-header">{{ group.grouper }}</div>
+{% for item in group.list %}
+<div class="ac-item" data-value="{{ item.name }}" data-lat="{{ item.lat_str }}" data-lng="{{ item.lng_str }}">{{ item.name }}</div>
+{% endfor %}
+{% endfor %}
+</div>
+      <input type="hidden" id="routeDestLat" value="{{ dest_lat|default:'' }}">
+      <input type="hidden" id="routeDestLng" value="{{ dest_lng|default:'' }}">
+    </div>
+    <button type="submit" class="btn btn-sm btn-info">Buscar ruta</button>
+    <button type="button" id="clearRoute" class="btn btn-sm btn-outline-light">Limpiar ruta</button>
+    <div class="d-flex gap-3 flex-wrap mt-2 align-items-center" style="width:100%;">
+      <div><label class="form-label text-cyan small mb-1">Modo de transporte</label><select id="routeMode" class="form-select form-select-sm bg-dark text-light border-secondary" style="width:auto;"><option value="driving">🚗 Carro</option><option value="cycling">🚲 Bicicleta</option><option value="walking">🚶 A pie</option></select></div>
+    </div>
+  </form>
+  <p class="text-light small mt-2 mb-0">
+    💡 Elige un barrio del menú <strong>▼</strong> o escribe una dirección como <code>Cra 70 #44-55</code> o un lugar como <code>Hospital Pablo Tobón</code>, <code>Parque Explora</code>.
+  </p>
+</section>
+<section class="dashboard-grid">
+  <div class="panel map-panel">
+    <div class="map-wrap"><div class="map-caption" id="routeCaption">Rutas seguras disponibles</div><div id="routesMap" class="map-large"><div class="spinner"></div></div><div style="position:absolute;bottom:12px;right:12px;z-index:500;display:flex;align-items:center;gap:6px;background:rgba(9,16,28,.75);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 9px;backdrop-filter:blur(6px);"><span style="font-size:.65rem;color:var(--text-muted);font-weight:700;letter-spacing:.06em;">MoviliData OS</span><span style="font-size:.6rem;color:#22c55e;">🛣️ Rutas</span></div></div>
+  </div>
+  <div class="panel">
+    <h2>Opciones de ruta</h2>
+    <div id="routesList"><div class="route-item"><p>Selecciona origen y destino para ver rutas</p></div></div>
+    <hr class="border-secondary my-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <h3 class="fs-6 text-cyan mb-0">Historial</h3>
+      <button type="button" id="clearHistory" class="btn btn-sm btn-outline-light ms-auto">Limpiar</button>
+    </div>
+    <div id="routesHistory"></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/routes.js?v=3"></script>
+{% endblock %}

@@ -1,0 +1,527 @@
+﻿{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>{% block title %}MoviliData OS{% endblock %}</title>
+  <link rel="manifest" href="/pwa/manifest.json">
+  <link rel="preconnect" href="/api/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" as="script">
+  <link rel="preload" href="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js" as="script">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="prefetch" href="/dashboard/">
+  <link rel="prefetch" href="/traffic/">
+  <link rel="prefetch" href="/routes/">
+  <link rel="prefetch" href="/predictions/">
+  <link rel="prefetch" href="/alerts/">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{% static 'css/leaflet-dark.css' %}">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/maps.css' %}">
+  <link rel="stylesheet" href="{% static 'css/alerts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+  <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+  <main class="app-shell">
+    {% block sidebar %}{% include "base/sidebar.html" %}{% endblock %}
+    <section class="content-wrap">
+      {% if messages %}
+      <div id="django-messages" style="display:none" data-messages='[{% for msg in messages %}{"text":"{{ msg|escapejs }}","tags":"{{ msg.tags }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'></div>
+      {% endif %}
+      {% if error %}<div id="django-error" style="display:none" data-error="{{ error|escapejs }}"></div>{% endif %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+  {% block footer %}{% include "base/footer.html" %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script>(function(){const orig=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(...a){if(a[0]==='2d'&&!a[1]?.willReadFrequently){a[1]={...a[1],willReadFrequently:true}}return orig.call(this,...a)}})()</script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js" defer></script>
+  <script src="{% static 'js/api.js' %}" defer></script>
+  <script src="{% static 'js/main.js' %}" defer></script>
+  <script src="{% static 'js/maps.js' %}" defer></script>
+  <script src="{% static 'js/charts.js' %}" defer></script>
+  <script src="{% static 'js/alerts.js' %}" defer></script>
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const msgs = document.getElementById("django-messages");
+    if (msgs) {
+      try {
+        JSON.parse(msgs.dataset.messages).forEach(m => {
+          if (window.Swal) Swal.fire({ toast: true, position: "top-end", icon: m.tags === "success" ? "success" : "error", title: m.text, showConfirmButton: false, timer: 4000, timerProgressBar: true, background: "#101b2c", color: "#f4f7fb", iconColor: m.tags === "success" ? "#28d17c" : "#f15d5d" });
+        });
+      } catch(e) {}
+    }
+    const err = document.getElementById("django-error");
+    if (err && err.dataset.error && window.Swal) {
+      Swal.fire({ toast: true, position: "top-end", icon: "error", title: err.dataset.error, showConfirmButton: false, timer: 5000, timerProgressBar: true, background: "#101b2c", color: "#f4f7fb", iconColor: "#f15d5d" });
+    }
+    const _updTime = () => {
+      const now = new Date();
+      document.querySelectorAll('.page-updated').forEach(e => {
+        e.textContent = 'actualizado ' + now.toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+      });
+    };
+    _updTime();
+    setInterval(_updTime, 1000);
+  });
+  </script>
+  {% block movibot %}
+  <style>
+    .movibot-launcher{
+      position:fixed;
+      right:24px;
+      bottom:24px;
+      z-index:2500;
+      width:62px;
+      height:62px;
+      border:1px solid rgba(56,189,248,.36);
+      border-radius:22px;
+      background:linear-gradient(135deg,#38bdf8 0%,#2563eb 58%,#0ea5e9 100%);
+      color:#f4f7fb;
+      display:grid;
+      place-items:center;
+      box-shadow:0 18px 45px rgba(8,145,178,.34),0 0 0 8px rgba(56,189,248,.08);
+      cursor:pointer;
+      transition:transform .22s ease,box-shadow .22s ease,filter .22s ease;
+    }
+    .movibot-launcher:hover{
+      transform:translateY(-2px) scale(1.04);
+      filter:brightness(1.08);
+      box-shadow:0 22px 56px rgba(8,145,178,.48),0 0 0 10px rgba(56,189,248,.1);
+    }
+    .movibot-launcher svg{width:30px;height:30px}
+    .movibot-panel{
+      position:fixed;
+      right:24px;
+      bottom:98px;
+      z-index:2499;
+      width:360px;
+      height:480px;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid rgba(56,189,248,.15);
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(16,27,44,.96),rgba(15,23,42,.94));
+      box-shadow:0 28px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.05);
+      backdrop-filter:blur(18px);
+      transform:translateY(18px) scale(.96);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .22s ease,transform .22s ease;
+    }
+    .movibot-panel.is-open{
+      transform:translateY(0) scale(1);
+      opacity:1;
+      pointer-events:auto;
+    }
+    .movibot-header{
+      min-height:66px;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:1px solid rgba(56,189,248,.15);
+      background:rgba(15,23,42,.72);
+    }
+    .movibot-brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:#f4f7fb;
+      font-weight:800;
+      letter-spacing:0;
+    }
+    .movibot-avatar{
+      width:36px;
+      height:36px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      background:rgba(56,189,248,.14);
+      border:1px solid rgba(56,189,248,.22);
+      color:#38bdf8;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .movibot-subtitle{
+      display:block;
+      margin-top:1px;
+      color:#94a3b8;
+      font-size:.74rem;
+      font-weight:600;
+    }
+    .movibot-close{
+      width:34px;
+      height:34px;
+      border:1px solid rgba(56,189,248,.15);
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      color:#f4f7fb;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition:background .18s ease,border-color .18s ease,transform .18s ease;
+    }
+    .movibot-close:hover{
+      background:rgba(56,189,248,.13);
+      border-color:rgba(56,189,248,.32);
+      transform:scale(1.04);
+    }
+    .movibot-messages{
+      flex:1;
+      padding:16px;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(56,189,248,.42) transparent;
+    }
+    .movibot-message{
+      max-width:86%;
+      padding:10px 12px;
+      border-radius:16px;
+      color:#f4f7fb;
+      font-size:.88rem;
+      line-height:1.4;
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+      overflow-wrap:anywhere;
+      animation:movibot-pop .18s ease both;
+    }
+    .movibot-message.is-bot{
+      align-self:flex-start;
+      border-bottom-left-radius:6px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(56,189,248,.13);
+    }
+    .movibot-message.is-user{
+      align-self:flex-end;
+      border-bottom-right-radius:6px;
+      background:linear-gradient(135deg,rgba(56,189,248,.94),rgba(37,99,235,.9));
+      border:1px solid rgba(56,189,248,.34);
+    }
+    .movibot-typing{
+      align-self:flex-start;
+      display:flex;
+      gap:5px;
+      align-items:center;
+      min-width:64px;
+    }
+    .movibot-typing span{
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#38bdf8;
+      animation:movibot-typing 1s infinite ease-in-out;
+    }
+    .movibot-typing span:nth-child(2){animation-delay:.14s}
+    .movibot-typing span:nth-child(3){animation-delay:.28s}
+    .movibot-form{
+      display:flex;
+      gap:10px;
+      padding:14px;
+      border-top:1px solid rgba(56,189,248,.15);
+      background:rgba(15,23,42,.8);
+    }
+    .movibot-input{
+      flex:1;
+      min-width:0;
+      height:42px;
+      border:1px solid rgba(56,189,248,.15);
+      border-radius:14px;
+      background:rgba(255,255,255,.05);
+      color:#f4f7fb;
+      padding:0 12px;
+      outline:none;
+      font:inherit;
+    }
+    .movibot-input::placeholder{color:#94a3b8}
+    .movibot-input:focus{
+      border-color:rgba(56,189,248,.5);
+      box-shadow:0 0 0 3px rgba(56,189,248,.12);
+    }
+    .movibot-send{
+      width:44px;
+      height:42px;
+      border:0;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,#38bdf8,#2563eb);
+      color:#f4f7fb;
+      cursor:pointer;
+      transition:transform .18s ease,filter .18s ease,opacity .18s ease;
+      box-shadow:0 10px 24px rgba(8,145,178,.24);
+    }
+    .movibot-send:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    .movibot-send:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .movibot-send svg{width:19px;height:19px}
+    .movibot-counter{
+      text-align:center;
+      font-size:.68rem;
+      color:#64748b;
+      padding:2px 0 0;
+      line-height:1;
+    }
+    .movibot-counter.is-low{color:#f59e0b}
+    .movibot-counter.is-empty{color:#ef4444}
+    @keyframes movibot-pop{
+      from{opacity:0;transform:translateY(6px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    @keyframes movibot-typing{
+      0%,80%,100%{opacity:.35;transform:translateY(0)}
+      40%{opacity:1;transform:translateY(-3px)}
+    }
+    @media (max-width:560px){
+      .movibot-launcher{right:16px;bottom:16px}
+      .movibot-panel{
+        right:10px;
+        left:10px;
+        bottom:88px;
+        width:auto;
+        height:min(520px,calc(100dvh - 112px));
+        border-radius:18px;
+      }
+    }
+  </style>
+  <button class="movibot-launcher" id="movibotLauncher" type="button" aria-label="Abrir chat de MoviliData">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.5 6.75A4.25 4.25 0 0 1 8.75 2.5h6.5a4.25 4.25 0 0 1 4.25 4.25v4.5a4.25 4.25 0 0 1-4.25 4.25H11l-4.35 3.32a.75.75 0 0 1-1.2-.6V15.2a4.25 4.25 0 0 1-.95-2.67V6.75Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M8 8.5h8M8 12h5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <section class="movibot-panel" id="movibotPanel" aria-label="Chat MóviBot" aria-hidden="true">
+    <header class="movibot-header">
+      <div class="movibot-brand">
+        <span class="movibot-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <path d="M7 8h10M7 12h7M8.5 18.5 5 21v-4.4A7.8 7.8 0 0 1 3 11.2C3 6.7 7 3 12 3s9 3.7 9 8.2-4 8.2-9 8.2c-1.2 0-2.4-.2-3.5-.9Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span>MóviBot<span class="movibot-subtitle">Asistente de movilidad</span></span>
+      </div>
+      <button class="movibot-close" id="movibotClose" type="button" aria-label="Cerrar chat">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+    <div class="movibot-messages" id="movibotMessages" aria-live="polite"></div>
+    <form class="movibot-form" id="movibotForm">
+      <input class="movibot-input" id="movibotInput" type="text" autocomplete="off" placeholder="Pregunta sobre tráfico, rutas o alertas..." aria-label="Mensaje para MóviBot">
+      <button class="movibot-send" id="movibotSend" type="submit" aria-label="Enviar mensaje">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12 20 4l-4.2 16-3.1-6.7L4 12Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+          <path d="m12.7 13.3 3.1-3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </form>
+    <div class="movibot-counter" id="movibotCounter" aria-live="polite"></div>
+  </section>
+  <script>
+  (() => {
+    const STORAGE_KEY = "movibot_conversation";
+    const WELCOMED_KEY = "movibot_welcomed";
+
+    const movibotConversation = [];
+    let movibotWelcomed = localStorage.getItem(WELCOMED_KEY) === "true";
+    let movibotBusy = false;
+    let movibotRemaining = -1;
+    let movibotCountdownTimer = null;
+
+    const movibotLauncher = document.getElementById("movibotLauncher");
+    const movibotPanel = document.getElementById("movibotPanel");
+    const movibotClose = document.getElementById("movibotClose");
+    const movibotMessages = document.getElementById("movibotMessages");
+    const movibotForm = document.getElementById("movibotForm");
+    const movibotInput = document.getElementById("movibotInput");
+    const movibotSend = document.getElementById("movibotSend");
+    const movibotCounter = document.getElementById("movibotCounter");
+
+    const movibotSaveConversation = () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(movibotConversation));
+      localStorage.setItem(WELCOMED_KEY, movibotWelcomed);
+    };
+
+    const movibotLoadConversation = () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const msgs = JSON.parse(saved);
+          movibotConversation.length = 0;
+          movibotConversation.push(...msgs);
+          for (const msg of msgs) {
+            const role = msg.role === "model" ? "assistant" : "user";
+            movibotAddMessage(role, msg.parts?.[0]?.text || "");
+          }
+        } catch (e) {}
+      }
+    };
+
+    const movibotScrollToBottom = () => {
+      movibotMessages.scrollTop = movibotMessages.scrollHeight;
+    };
+
+    const movibotAddMessage = (role, text) => {
+      const movibotBubble = document.createElement("div");
+      movibotBubble.className = `movibot-message ${role === "user" ? "is-user" : "is-bot"}`;
+      movibotBubble.textContent = text;
+      movibotMessages.appendChild(movibotBubble);
+      movibotScrollToBottom();
+    };
+
+    const movibotSetBusy = (busy) => {
+      movibotBusy = busy;
+      movibotInput.disabled = busy;
+      movibotSend.disabled = busy;
+    };
+
+    const movibotUpdateCounter = () => {
+      if (movibotRemaining < 0) {
+        movibotCounter.textContent = "";
+        movibotCounter.className = "movibot-counter";
+        return;
+      }
+      movibotCounter.textContent = `Te quedan ${movibotRemaining} mensaje${movibotRemaining !== 1 ? "s" : ""}`;
+      movibotCounter.className = "movibot-counter";
+      if (movibotRemaining <= 2) movibotCounter.classList.add("is-low");
+      if (movibotRemaining <= 0) movibotCounter.classList.add("is-empty");
+    };
+
+    const movibotStartCountdown = (seconds) => {
+      movibotSetBusy(true);
+      let remaining = seconds;
+      const countMsg = document.createElement("div");
+      countMsg.className = "movibot-message is-bot";
+      countMsg.id = "movibotCountdown";
+      movibotMessages.appendChild(countMsg);
+      movibotScrollToBottom();
+
+      const tick = () => {
+        if (remaining <= 0) {
+          clearInterval(movibotCountdownTimer);
+          movibotCountdownTimer = null;
+          const el = document.getElementById("movibotCountdown");
+          if (el) el.remove();
+          movibotSetBusy(false);
+          movibotInput.focus();
+          return;
+        }
+        const el = document.getElementById("movibotCountdown");
+        if (el) {
+          el.textContent = `Demasiadas solicitudes. Puedes escribir de nuevo en ${remaining} seg.`;
+        }
+        remaining--;
+      };
+      tick();
+      movibotCountdownTimer = setInterval(tick, 1000);
+    };
+
+    const movibotAddTyping = () => {
+      const movibotTyping = document.createElement("div");
+      movibotTyping.className = "movibot-message is-bot movibot-typing";
+      movibotTyping.id = "movibotTyping";
+      movibotTyping.innerHTML = "<span></span><span></span><span></span>";
+      movibotMessages.appendChild(movibotTyping);
+      movibotScrollToBottom();
+    };
+
+    const movibotRemoveTyping = () => {
+      const movibotTyping = document.getElementById("movibotTyping");
+      if (movibotTyping) movibotTyping.remove();
+    };
+
+    const movibotToggle = (open) => {
+      const shouldOpen = typeof open === "boolean" ? open : !movibotPanel.classList.contains("is-open");
+      movibotPanel.classList.toggle("is-open", shouldOpen);
+      movibotPanel.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+      movibotLauncher.setAttribute("aria-label", shouldOpen ? "Cerrar chat de MoviliData" : "Abrir chat de MoviliData");
+      if (shouldOpen) {
+        if (!movibotWelcomed && movibotConversation.length === 0) {
+          movibotWelcomed = true;
+          movibotSaveConversation();
+          movibotAddMessage("assistant", "¡Hola! Soy MóviBot 👋 Pregúntame sobre el tráfico, alertas, rutas o congestión en Medellín.");
+        }
+        window.setTimeout(() => movibotInput.focus(), 180);
+      }
+    };
+
+    const movibotAskGemini = async () => {
+      const movibotGeminiResult = await fetch("/api/movibot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({contents: movibotConversation})
+      });
+      if (!movibotGeminiResult.ok) {
+        const errData = await movibotGeminiResult.json().catch(() => ({}));
+        const error = new Error(errData.error || `Movibot ${movibotGeminiResult.status}`);
+        error.status = movibotGeminiResult.status;
+        error.retryAfter = parseInt(movibotGeminiResult.headers.get("Retry-After"), 10) || 0;
+        error.data = errData;
+        throw error;
+      }
+      const movibotGeminiJson = await movibotGeminiResult.json();
+      if (typeof movibotGeminiJson.remaining === "number") {
+        movibotRemaining = movibotGeminiJson.remaining;
+        movibotUpdateCounter();
+      }
+      return movibotGeminiJson.text ? movibotGeminiJson.text.trim() : "No pude generar una respuesta en este momento.";
+    };
+
+    movibotLoadConversation();
+
+    movibotLauncher.addEventListener("click", () => movibotToggle());
+    movibotClose.addEventListener("click", () => movibotToggle(false));
+    movibotForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (movibotBusy) return;
+      const movibotUserText = movibotInput.value.trim();
+      if (!movibotUserText) return;
+      movibotInput.value = "";
+      movibotConversation.push({role: "user", parts: [{text: movibotUserText}]});
+      movibotSaveConversation();
+      movibotAddMessage("user", movibotUserText);
+      movibotSetBusy(true);
+      movibotAddTyping();
+      try {
+        const movibotBotText = await movibotAskGemini();
+        movibotConversation.push({role: "model", parts: [{text: movibotBotText}]});
+        movibotSaveConversation();
+        movibotRemoveTyping();
+        movibotAddMessage("assistant", movibotBotText);
+      } catch (movibotError) {
+        movibotRemoveTyping();
+        if (movibotError.status === 429 && movibotError.retryAfter > 0) {
+          movibotStartCountdown(movibotError.retryAfter);
+        } else {
+          movibotAddMessage("assistant", movibotError.message || "Hubo un problema al conectarme. Intenta de nuevo en un momento.");
+          movibotSetBusy(false);
+        }
+      } finally {
+        if (!movibotCountdownTimer) movibotSetBusy(false);
+        movibotInput.focus();
+      }
+    });
+  })();
+  </script>
+  {% endblock %}
+</body>
+</html>

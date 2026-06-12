@@ -1,0 +1,174 @@
+{% extends "base/base.html" %}
+{% block title %}Predicciones | MoviliData OS{% endblock %}
+{% block content %}
+<style>
+.map-wrap{position:relative;min-width:0}.map-caption{position:absolute;top:12px;left:12px;z-index:500;background:rgba(9,16,28,.82);border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 10px;color:var(--text-soft);font-size:.78rem;backdrop-filter:blur(8px)}.map-legend{position:absolute;bottom:24px;right:12px;z-index:500;background:rgba(9,16,28,.88);border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;font-size:.72rem;backdrop-filter:blur(8px);min-width:110px}.map-legend div{display:flex;align-items:center;gap:6px;color:var(--text-soft);line-height:1.6}.map-legend .legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid #fff;flex-shrink:0}.map-legend .legend-title{font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-size:.65rem;margin-top:4px;border:0!important}.map-legend .legend-title:first-child{margin-top:0}.pred-tooltip{background:rgba(9,16,28,.9)!important;border:1px solid var(--line)!important;color:var(--text-bright)!important;font-size:.78rem!important;padding:4px 8px!important;border-radius:var(--radius-sm)!important;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4)}.pred-tooltip::before{border-top-color:rgba(9,16,28,.9)!important}.pred-popup{min-width:140px}.pred-popup h4{margin:0 0 6px;color:var(--text-bright);font-size:.9rem}.pred-popup table{width:100%;font-size:.8rem}.pred-popup td{padding:2px 0}.pred-popup td:last-child{font-weight:700;color:var(--text-bright)}
+</style>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Machine learning</p>
+    <h1>Predicción de congestión</h1>
+    <small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">
+      Medellín, Colombia — <span class="page-updated">actualizando...</span>
+    </small>
+  </div>
+  <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+    <span id="modelBadge" class="badge-pill badge-amber"></span>
+    <button class="btn btn-info btn-sm" data-refresh>↻ Actualizar</button>
+  </div>
+</div>
+<p class="text-muted small mb-3" id="modelInfo" style="margin-top:-16px;"></p>
+
+<section class="panel mb-3">
+  <div class="d-flex align-items-center gap-4 flex-wrap">
+    <div class="d-flex align-items-center gap-2">
+      <label class="text-cyan small mb-0">Hora base:</label>
+      <input type="range" id="hourRange" min="6" max="22" value="18" style="width:140px">
+      <span id="hourLabel" class="text-light small">18:00</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <label class="text-cyan small mb-0">Pronóstico:</label>
+      <input type="range" id="forecastOffset" min="0" max="2" value="0" class="form-range w-auto" style="width:100px">
+      <span id="forecastLabel" class="text-light small">Hora actual</span>
+    </div>
+  </div>
+</section>
+<section class="dashboard-grid">
+  <div class="panel"><h2>Pronostico por zona</h2><canvas id="predictionChart" height="220"></canvas><div class="spinner" id="spinner-predictionChart"></div></div>
+  <div class="panel map-panel">
+    <div class="map-wrap"><div class="map-caption" id="predictionCaption">Prediccion por comuna</div><div class="map-legend"><div class="legend-title">Congestion</div><div><span class="legend-dot" style="background:#22c55e"></span>Baja (&lt;55)</div><div><span class="legend-dot" style="background:#22d3ee"></span>Media (55-74)</div><div><span class="legend-dot" style="background:#ef4444"></span>Alta (75+)</div></div><div id="predictionMap" class="map-large" style="height:600px"><div class="spinner"></div></div></div>
+  </div>
+</section>
+
+<script>
+(async()=>{
+  const c=window.__prefetchCache&&window.__prefetchCache["/api/bootstrap"];
+  if(c&&Date.now()-c.ts<10000){window.__bootData=c.data;return}
+  try{const r=await fetch("/api/bootstrap?_="+Date.now(),{headers:{Accept:"application/json"}});window.__bootData=await r.json()}catch(e){}
+})();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const slider = document.getElementById("forecastOffset");
+  const label = document.getElementById("forecastLabel");
+  const range = document.getElementById("hourRange");
+  const hourLabel = document.getElementById("hourLabel");
+
+  const updateHourLabel = () => {
+    if (hourLabel && range) hourLabel.textContent = `${range.value}:00`;
+  };
+
+  if (slider && label) {
+    const update = () => {
+      const base = range ? parseInt(range.value) : 18;
+      const off = parseInt(slider.value);
+      const labels = ["Hora actual", "+1 hora", "+2 horas"];
+      label.textContent = `${(base + off) % 24}:00 (${labels[off] || "+" + off + " horas"})`;
+    };
+    slider.addEventListener("input", update);
+    slider.addEventListener("change", update);
+    if (range) {
+      const updateHour = () => { updateHourLabel(); update(); };
+      range.addEventListener("input", updateHour);
+      range.addEventListener("change", updateHour);
+    }
+    update();
+    updateHourLabel();
+  }
+  // Eagerly render prediction chart and re-render on slider changes
+  const renderChart = () => { if (window.renderPredictionChart) window.renderPredictionChart(range ? range.value : 18); };
+  renderChart();
+  if (range) {
+    range.addEventListener("input", renderChart);
+    range.addEventListener("change", renderChart);
+  }
+  if (slider) {
+    slider.addEventListener("input", renderChart);
+    slider.addEventListener("change", renderChart);
+  }
+});
+</script>
+<script>
+async function updateModelBadge() {
+  const badge = document.getElementById("modelBadge");
+  if (!badge) return;
+  try {
+    const cacheKey = "/api/predictions";
+    const c = window.__prefetchCache && window.__prefetchCache[cacheKey];
+    let data;
+    if (c && Date.now() - c.ts < 10000) {
+      data = c.data;
+    } else {
+      const resp = await fetch(cacheKey + "?hour=" + (parseInt(document.getElementById("hourRange")?.value || 18)));
+      if (!resp.ok) return;
+      data = await resp.json();
+    }
+    if (data.is_realtime_based) {
+      badge.textContent = "⏳ Basado en tráfico actual";
+      badge.className = "badge-pill badge-amber";
+    } else if (data.model_type === "ml") {
+      badge.textContent = "ML en producción ✓";
+      badge.className = "badge-pill badge-cyan";
+    } else if (data.model_type === "live") {
+      badge.textContent = "Tiempo real TomTom ✓";
+      badge.className = "badge-pill badge-green";
+    } else {
+      badge.textContent = "Modo heurístico (sin API)";
+      badge.className = "badge-pill badge-amber";
+    }
+    const info = document.getElementById("modelInfo");
+    if (info && data.training_source) {
+      if (data.is_realtime_based) {
+        info.innerHTML = '🔵 <strong>Basado en tráfico actual</strong> — el modelo ML con Random Forest se activará automáticamente cuando haya suficientes registros históricos (&ge;' + (data.record_count || 0) + '/20 registros en &ge;3 horas distintas).';
+      } else {
+        info.innerHTML = '';
+      }
+    }
+  } catch (_) {}
+}
+(async () => { await updateModelBadge(); setInterval(updateModelBadge, 15000); })();
+</script>
+{% endblock %}
+{% block scripts %}
+<script>
+(()=>{
+  const congestionColor=v=>v>=75?"#ef4444":v>=55?"#22d3ee":"#22c55e";
+  const markerRadius=v=>Math.max(8,Math.min(18,6+v*12));
+  async function renderPredictionMap(){
+    try {
+      const hour=Number(document.getElementById("hourRange")?.value||18);
+      const offset=Number(document.getElementById("forecastOffset")?.value||0);
+      const map=createOsmMap("predictionMap"); if(!map) return;
+      const data=await MoviliAPI.predictions(hour);
+      const boot=await MoviliAPI.bootstrap();
+      const comunas=boot.zones?boot.zones.map(z=>z.zone):[];
+      const layer=dynamicLayer("predictionMap"); if(!layer) return;
+      (data.predictions||[]).filter(p=>comunas.length===0||comunas.includes(p.zone)).forEach(p=>{
+        const f=p.forecast&&p.forecast[offset]?p.forecast[offset]:p.forecast?.[0];
+        if(!f) return;
+        const congestion=Number(f.predicted_congestion);
+        const confidence=Number(f.confidence)||0.5;
+        const rain=Number(f.rain_probability)||0;
+        L.circleMarker([p.lat,p.lng],{
+          radius:markerRadius(confidence),
+          color:"#fff",
+          weight:2+Math.round(rain/25),
+          fillColor:congestionColor(congestion),
+          fillOpacity:.85
+        }).addTo(layer)
+          .bindTooltip(`<strong>${p.zone}</strong><table><tr><td class="label">Nivel</td><td class="value">${congestion>=75?'Alto':congestion>=55?'Medio-Alto':congestion>=30?'Medio-Bajo':'Bajo'}</td></tr><tr><td class="label">Congestión</td><td class="value">${congestion}%</td></tr><tr><td class="label">Confianza</td><td class="value">${Math.round(confidence*100)}%</td></tr></table>`,{sticky:true});
+      });
+      MoviliLive.flash(document.getElementById("predictionMap"));
+    } catch(e) { console.error("renderPredictionMap error:", e); }
+  }
+  window.renderPredictionMap=renderPredictionMap;
+  document.addEventListener("DOMContentLoaded",()=>{
+    window.renderPredictionMap=renderPredictionMap;
+    document.getElementById("hourRange")?.addEventListener("input",renderPredictionMap);
+    document.getElementById("hourRange")?.addEventListener("change",renderPredictionMap);
+    document.getElementById("forecastOffset")?.addEventListener("input",renderPredictionMap);
+    document.getElementById("forecastOffset")?.addEventListener("change",renderPredictionMap);
+  });
+})();
+</script>
+{% endblock %}

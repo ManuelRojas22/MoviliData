@@ -1,0 +1,246 @@
+<div class="clima-widget">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h5 style="color:#f4f7fb;font-weight:700;margin:0;font-size:1.1rem;">🌤 Weather</h5>
+      <small style="color:#64748b;font-size:.75rem;">Medellín, Colombia — <span id="climaUpdated">updating...</span></small>
+    </div>
+    <div id="climaRefreshBtn" style="cursor:pointer;color:#94a3b8;font-size:.8rem;padding:4px 10px;border-radius:6px;border:1px solid #1e293b;background:transparent;">↻ Refresh</div>
+  </div>
+  <div class="row g-3 mb-4" id="climaCurrent"></div>
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="panel" style="background:#101b2c;border-radius:12px;padding:1.25rem;">
+        <h6 style="color:#94a3b8;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;font-weight:600;">Hourly Forecast — Next 24h</h6>
+        <canvas id="climaChart" height="200"></canvas>
+        <div id="climaChartSpinner" class="spinner" style="margin:2rem auto;width:2rem;height:2rem;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3" id="climaForecast"></div>
+</div>
+
+<script>
+(function(){
+  var LAT=6.2442, LNG=-75.5812, TZ='America%2FBogota';
+  var API='https://api.open-meteo.com/v1/forecast?latitude='+LAT+'&longitude='+LNG
+    +'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m'
+    +'&hourly=temperature_2m,precipitation_probability,weather_code'
+    +'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,wind_speed_10m_max'
+    +'&timezone='+TZ+'&forecast_hours=24&forecast_days=8';
+
+  var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function wmoEmoji(c){
+    if(c===0)return '☀️';
+    if(c<=2)return '⛅';
+    if(c===3)return '☁️';
+    if(c===45||c===48)return '🌫️';
+    if(c>=51&&c<=55)return '🌦️';
+    if(c>=56&&c<=67)return '🌧️';
+    if(c>=71&&c<=77)return '❄️';
+    if(c>=80&&c<=82)return '🌦️';
+    if(c>=85&&c<=86)return '❄️';
+    if(c>=95)return '⛈️';
+    return '❓';
+  }
+
+  function wmoDesc(c){
+    if(c===0)return 'Clear';
+    if(c===1)return 'Mostly clear';
+    if(c===2)return 'Partly cloudy';
+    if(c===3)return 'Overcast';
+    if(c===45||c===48)return 'Fog';
+    if(c>=51&&c<=55)return 'Drizzle';
+    if(c>=56&&c<=57)return 'Freezing drizzle';
+    if(c>=61&&c<=65)return 'Rain';
+    if(c>=66&&c<=67)return 'Freezing rain';
+    if(c>=71&&c<=77)return 'Snow';
+    if(c>=80&&c<=82)return 'Rain showers';
+    if(c>=85&&c<=86)return 'Snow showers';
+    if(c===95)return 'Thunderstorm';
+    if(c>=96)return 'Thunderstorm with hail';
+    return '—';
+  }
+
+  function trafficBadge(rain){
+    if(rain>10)return '<span class="badge" style="background:#dc2626;color:#fff;">🔴 Heavy traffic</span>';
+    if(rain>2)return '<span class="badge" style="background:#eab308;color:#000;">🟡 Moderate traffic</span>';
+    return '<span class="badge" style="background:#22c55e;color:#fff;">🟢 Normal traffic</span>';
+  }
+
+  function shortDay(iso){
+    var d=new Date(iso+'T12:00:00');
+    return SHORT[d.getDay()];
+  }
+
+  function hourLabel(iso){
+    return iso.slice(11,16);
+  }
+
+  function renderCurrent(d){
+    var c=d.current;
+    var cards=[
+      {icon:'🌡️',label:'Temperature',value:c.temperature_2m+'°',unit:'Feels like '+c.apparent_temperature+'°'},
+      {icon:'💧',label:'Humidity',value:c.relative_humidity_2m+'%',unit:''},
+      {icon:'💨',label:'Wind',value:c.wind_speed_10m+' km/h',unit:''},
+      {icon:'🌧️',label:'Rain',value:c.rain+' mm',unit:c.precipitation+' mm total'},
+    ];
+    var html=cards.map(function(card){
+      return '<div class="col-6 col-md-3"><div class="card h-100 border-0" style="background:#101b2c;border-radius:10px;">'
+        +'<div class="card-body p-3">'
+        +'<div style="font-size:1.4rem;margin-bottom:.25rem;">'+card.icon+'</div>'
+        +'<small style="color:#94a3b8;font-size:.7rem;text-transform:uppercase;">'+card.label+'</small>'
+        +'<div style="color:#f4f7fb;font-size:1.3rem;font-weight:700;margin:.15rem 0;">'+card.value+'</div>'
+        +(card.unit?'<small style="color:#64748b;font-size:.7rem;">'+card.unit+'</small>':'')
+        +'</div></div></div>';
+    }).join('');
+    document.getElementById('climaCurrent').innerHTML=html;
+  }
+
+  function renderForecast(d){
+    var daily=d.daily;
+    var items=[];
+    for(var i=0;i<7;i++){
+      var code=daily.weather_code[i];
+      var max=daily.temperature_2m_max[i];
+      var min=daily.temperature_2m_min[i];
+      var rain=daily.rain_sum[i]||0;
+      var wind=daily.wind_speed_10m_max[i];
+      items.push('<div class="col-6 col-md-3 col-lg">'
+        +'<div class="card h-100 border-0" style="background:#101b2c;border-radius:10px;">'
+        +'<div class="card-body p-3 text-center">'
+        +'<small style="color:#94a3b8;font-size:.7rem;text-transform:uppercase;font-weight:600;">'+shortDay(daily.time[i])+'</small>'
+        +'<div style="font-size:1.8rem;margin:.35rem 0;">'+wmoEmoji(code)+'</div>'
+        +'<div style="color:#f4f7fb;font-size:.9rem;font-weight:600;">'+max.toFixed(0)+'° / '+min.toFixed(0)+'°</div>'
+        +'<small style="color:#64748b;font-size:.65rem;display:block;margin-bottom:.3rem;">'+wmoDesc(code)+'</small>'
+        +'<div style="font-size:.65rem;color:#94a3b8;">💨 '+wind+' km/h &nbsp; 🌧️ '+rain.toFixed(1)+' mm</div>'
+        +'<div class="mt-2">'+trafficBadge(rain)+'</div>'
+        +'</div></div></div>');
+    }
+    document.getElementById('climaForecast').innerHTML=items.join('');
+  }
+
+  function renderChart(d){
+    var hourly=d.hourly;
+    var labels=hourly.time.map(hourLabel);
+    var temps=hourly.temperature_2m;
+    var probs=hourly.precipitation_probability;
+
+    var spinner=document.getElementById('climaChartSpinner');
+    if(spinner)spinner.style.display='none';
+
+    var ctx=document.getElementById('climaChart');
+    if(!ctx)return;
+    var parent=ctx.parentNode;
+    if(parent&&spinner)parent.removeChild(spinner);
+
+    new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:labels,
+        datasets:[
+          {
+            label:'Temperature °C',
+            type:'line',
+            data:temps,
+            yAxisID:'yTemp',
+            borderColor:'#f59e0b',
+            backgroundColor:'rgba(245,158,11,0.08)',
+            fill:true,
+            tension:.3,
+            pointRadius:1,
+            pointHitRadius:6,
+            borderWidth:2,
+          },
+          {
+            label:'Rain prob. %',
+            type:'bar',
+            data:probs,
+            yAxisID:'yProb',
+            backgroundColor:'rgba(59,130,246,0.4)',
+            borderColor:'rgba(59,130,246,0.7)',
+            borderWidth:1,
+            borderRadius:2,
+          }
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{
+            labels:{color:'#94a3b8',font:{size:11},boxWidth:12,boxHeight:12}
+          },
+          tooltip:{
+            backgroundColor:'#0f172a',
+            titleColor:'#f4f7fb',
+            bodyColor:'#cbd5e1',
+            borderColor:'#1e293b',
+            borderWidth:1,
+            padding:8,
+          }
+        },
+        scales:{
+          x:{
+            ticks:{color:'#64748b',font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:12},
+            grid:{display:false}
+          },
+          yTemp:{
+            position:'left',
+            title:{display:true,text:'°C',color:'#94a3b8',font:{size:10}},
+            ticks:{color:'#64748b',font:{size:9}},
+            grid:{color:'rgba(148,163,184,0.08)'},
+            beginAtZero:false,
+          },
+          yProb:{
+            position:'right',
+            min:0,
+            max:100,
+            title:{display:true,text:'%',color:'#94a3b8',font:{size:10}},
+            ticks:{color:'#64748b',font:{size:9},callback:function(v){return v+'%'}},
+            grid:{display:false},
+          }
+        }
+      }
+    });
+  }
+
+  function updateTimestamp(){
+    var el=document.getElementById('climaUpdated');
+    if(el)el.textContent='updated '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function loadWeather(){
+    var el=document.getElementById('climaCurrent');
+    if(!el)return;
+    fetch(API)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        renderCurrent(d);
+        renderForecast(d);
+        renderChart(d);
+        updateTimestamp();
+      })
+      .catch(function(e){
+        document.getElementById('climaCurrent').innerHTML='<div class="col-12"><div class="alert alert-danger m-0" style="background:#1e293b;border:none;color:#f87171;font-size:.85rem;">Error loading weather data</div></div>';
+      });
+  }
+
+  function init(){
+    if(typeof Chart==='undefined'){setTimeout(init,150);return;}
+    var el=document.getElementById('climaCurrent');
+    if(!el)return;
+    var btn=document.getElementById('climaRefreshBtn');
+    if(btn)btn.addEventListener('click',loadWeather);
+    loadWeather();
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init);
+  } else {
+    init();
+  }
+})();
+</script>

@@ -1,0 +1,173 @@
+.metric-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+}
+.metric-card{
+  min-height:142px;
+  padding:20px;
+  position:relative;
+  overflow:hidden;
+}
+.metric-card::after{
+  content:"";
+  position:absolute;
+  inset:auto 18px 0 18px;
+  height:3px;
+  border-radius:var(--radius-full) var(--radius-full) 0 0;
+  background:linear-gradient(90deg,var(--cyan),var(--green));
+  opacity:.72;
+}
+.metric-card span,.metric-card small{
+  display:block;
+  color:var(--text-muted);
+  font-weight:var(--weight-medium);
+}
+.metric-card strong{
+  display:block;
+  margin:10px 0 8px;
+  color:var(--text-primary);
+  font-size:2.25rem;
+  line-height:1;
+  font-weight:var(--weight-black);
+}
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:18px;
+  align-items:stretch;
+}
+.dashboard-grid .panel{min-width:0}
+.preview-grid{
+  display:grid;
+  grid-template-columns:1.2fr .8fr;
+  gap:18px;
+}
+.map-panel{min-height:430px}
+.nh-dropdown{z-index:9999!important}
+.alerts-feed{max-height:460px;overflow:auto}
+.alert-item,.route-item{
+  padding:14px;
+  margin-bottom:12px;
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:rgba(255,255,255,.045);
+}
+.alert-item strong,.route-item strong{color:var(--text-primary)}
+.alert-item p,.route-item p{margin:.35rem 0 0;color:var(--text-muted)}
+.badge-risk{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:4px 10px;
+  border-radius:var(--radius-full);
+  font-size:.72rem;
+  font-weight:var(--weight-bold);
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+.badge-risk.risk-low{
+  color:#b8f0c8;
+  background:rgba(34,197,94,.18);
+}
+.badge-risk.risk-mid{
+  color:#fde6a8;
+  background:rgba(245,158,11,.18);
+}
+.badge-risk.risk-high{
+  color:#ffd1d1;
+  background:rgba(241,93,93,.18);
+}
+.route-item{
+  transition:border-color var(--ease-base),box-shadow var(--ease-base);
+}
+.route-item.route-primary{
+  border-color:rgba(34,211,238,.4);
+  box-shadow:inset 0 0 0 1px rgba(34,211,238,.12);
+}
+.route-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.route-index{
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:rgba(34,211,238,.15);
+  color:var(--cyan);
+  font-size:.75rem;
+  font-weight:var(--weight-bold);
+  flex-shrink:0;
+}
+.route-name{
+  flex:1;
+  color:var(--text-primary);
+  font-weight:var(--weight-medium);
+  font-size:.88rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.route-meta{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-top:6px;
+  color:var(--text-muted);
+  font-size:.8rem;
+}
+.route-meta .dot{
+  color:rgba(178,197,219,.3);
+}
+.history-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  margin-bottom:4px;
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background var(--ease-fast),border-color var(--ease-fast);
+  background:rgba(255,255,255,.03);
+}
+.history-item:hover{
+  background:rgba(34,211,238,.08);
+  border-color:rgba(34,211,238,.3);
+}
+.history-item span{
+  flex:1;
+  color:var(--text-bright);
+  font-size:.82rem;
+  font-weight:var(--weight-normal);
+}
+.history-item small{
+  color:var(--text-muted);
+  font-size:.7rem;
+  white-space:nowrap;
+}
+.table{
+  --bs-table-bg:rgba(16,27,44,.7);
+  --bs-table-striped-bg:rgba(255,255,255,.035);
+  --bs-table-hover-bg:rgba(34,211,238,.08);
+  --bs-table-border-color:var(--line);
+  color:var(--text-primary);
+  margin-bottom:0;
+}
+.table thead th{
+  color:var(--text-header);
+  font-size:.78rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+input[type="range"]{
+  width:min(280px,100%);
+  accent-color:var(--cyan);
+}
+#trafficTable td>span.congestion,#trafficTable td>span.speed,#trafficTable td>span.incidents{font-weight:700!important}
+.cg-high{color:#ef4444!important}.cg-mid{color:#f59e0b!important}.cg-low{color:#28d17c!important}
+.sp-fast{color:#28d17c!important}.sp-mid{color:#f59e0b!important}.sp-slow{color:#ef4444!important}
+.ic-high{color:#ef4444!important}.ic-mid{color:#f59e0b!important}.ic-low{color:#28d17c!important}.ic-none{color:#6b7280!important}

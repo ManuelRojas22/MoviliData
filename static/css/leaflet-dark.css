@@ -1,0 +1,63 @@
+/* Tooltips Leaflet oscuros */
+.leaflet-tooltip {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  color: #f4f7fb !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: .8rem !important;
+}
+.leaflet-tooltip::before {
+  border-top-color: #1e293b !important;
+  border-bottom-color: #1e293b !important;
+  border-left-color: #1e293b !important;
+  border-right-color: #1e293b !important;
+}
+.leaflet-tooltip-top::before {
+  border-top-color: #1e293b !important;
+}
+.leaflet-tooltip-bottom::before {
+  border-bottom-color: #1e293b !important;
+}
+.leaflet-tooltip-left::before {
+  border-left-color: #1e293b !important;
+}
+.leaflet-tooltip-right::before {
+  border-right-color: #1e293b !important;
+}
+
+/* Popups Leaflet oscuros */
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  color: #f4f7fb !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+  border-radius: 8px !important;
+}
+.leaflet-popup-content {
+  color: #f4f7fb !important;
+  font-size: .82rem !important;
+  margin: 10px 14px !important;
+}
+.leaflet-popup-tip {
+  background: #0f172a !important;
+}
+.leaflet-popup-close-button {
+  color: #64748b !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #f4f7fb !important;
+  background: transparent !important;
+}
+
+/* Clase específica para tooltips del mapa de clima */
+.clima-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.leaflet-tooltip.clima-tooltip::before {
+  display: none !important;
+}
