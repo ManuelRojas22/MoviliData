@@ -3,6 +3,7 @@
 {% block body_class %}auth-page{% endblock %}
 {% block navbar %}{% endblock %}
 {% block sidebar %}{% endblock %}
+{% block movibot %}{% endblock %}
 {% block content %}
 <a href="/" class="back-link">← Volver al inicio</a>
 <section class="auth-wrap panel">
@@ -15,8 +16,12 @@
     </div>
     <div class="mb-3">
       <label class="form-label">Contrasena</label>
-      <input class="form-control" name="password" value="admin123" type="password" id="loginPass">
+      <div class="password-wrap">
+        <input class="form-control" name="password" type="password" id="loginPass" placeholder="Minimo 6 caracteres">
+        <button type="button" class="password-toggle" id="loginPassToggle" aria-label="Mostrar contrasena" tabindex="-1">👁️</button>
+      </div>
       <small class="field-error" id="loginPassError"></small>
+      <small class="field-hint" id="loginPassHint" style="display:none;color:var(--text-muted);font-size:.7rem;margin-top:2px;">Minimo 6 caracteres</small>
     </div>
     <button class="btn btn-primary w-100">Entrar</button>
     <p class="auth-switch">¿No tienes cuenta? <a href="/users/register/">Registrate aqui</a></p>
@@ -35,11 +40,36 @@ function validateLogin() {
   if (!pass.value.trim()) {
     document.getElementById("loginPassError").textContent = "Ingresa tu contrasena";
     valid = false;
+  } else if (pass.value.length < 6) {
+    document.getElementById("loginPassError").textContent = "Minimo 6 caracteres (igual que en registro)";
+    valid = false;
   }
   if (!valid && window.Swal) {
     Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Completa todos los campos", showConfirmButton: false, timer: 3500, background: "#101b2c", color: "#f4f7fb", iconColor: "#f5b84b" });
   }
   return valid;
 }
+document.getElementById("loginPass").addEventListener("focus", () => {
+  document.getElementById("loginPassHint").style.display = "block";
+});
+document.getElementById("loginPass").addEventListener("blur", () => {
+  document.getElementById("loginPassHint").style.display = "none";
+});
+document.getElementById("loginPassToggle").addEventListener("click", function() {
+  const input = document.getElementById("loginPass");
+  if (input.type === "password") {
+    input.type = "text";
+    this.textContent = "🙈";
+  } else {
+    input.type = "password";
+    this.textContent = "👁️";
+  }
+});
 </script>
+<style>
+.password-wrap{position:relative;display:flex;align-items:center}
+.password-wrap .form-control{padding-right:36px}
+.password-toggle{position:absolute;right:4px;background:none;border:none;cursor:pointer;padding:4px 8px;font-size:.85rem;line-height:1;color:var(--text-muted);transition:color .15s}
+.password-toggle:hover{color:var(--text-bright)}
+</style>
 {% endblock %}

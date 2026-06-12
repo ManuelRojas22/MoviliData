@@ -7,7 +7,7 @@
 }
 .map-preview{height:460px}
 .map-large{height:460px}
-.map-xl{height:70vh;min-height:520px}
+.map-xl{height:80vh;min-height:600px}
 .map-message{
   height:100%;
   display:grid;
@@ -28,9 +28,65 @@
   color:#0f172a!important;
   font-weight:var(--weight-extrabold);
 }
-.leaflet-popup-content-wrapper,.leaflet-popup-tip{
+.leaflet-popup-content-wrapper{
   color:var(--text-primary);
   background:var(--surface);
-  border:1px solid rgba(178,197,219,.22);
+  border:1px solid #1e293b;
+  border-radius:8px;
+  padding:0;
+  overflow:hidden;
 }
-.leaflet-popup-content{line-height:1.45}
+.leaflet-popup-tip{background:var(--surface)!important;border:none!important;box-shadow:none!important;}
+.leaflet-popup-content{margin:12px 14px!important;line-height:1.45}
+.clima-tooltip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5) !important;
+  padding: 8px 12px !important;
+  color: #f4f7fb !important;
+  font-family: inherit !important;
+  font-size: .8rem !important;
+  line-height: 1.5 !important;
+}
+.clima-tooltip::before,
+.leaflet-tooltip.clima-tooltip::before,
+.leaflet-tooltip-bottom.clima-tooltip::before,
+.leaflet-tooltip-top.clima-tooltip::before,
+.leaflet-tooltip-left.clima-tooltip::before,
+.leaflet-tooltip-right.clima-tooltip::before {
+  display: none !important;
+}
+.leaflet-tooltip.clima-tooltip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5) !important;
+  padding: 8px 12px !important;
+  color: #f4f7fb !important;
+  font-family: inherit !important;
+  font-size: .8rem !important;
+  line-height: 1.5 !important;
+}
+.clima-tooltip strong {
+  color: #f4f7fb;
+  font-size: .85rem;
+}
+.clima-tooltip table {
+  border-collapse: collapse;
+  margin-top: 2px;
+}
+.clima-tooltip table td {
+  padding: 1px 6px 1px 0;
+  white-space: nowrap;
+}
+.clima-tooltip .label {
+  color: #94a3b8;
+  padding-right: 10px;
+}
+.clima-tooltip .value {
+  color: #f4f7fb;
+  font-weight: 600;
+  text-align: right;
+}
+

@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 from .models import UserProfile
 
 
@@ -11,6 +12,7 @@ def ensure_demo_superuser():
         User.objects.create_superuser("admin", "admin@movilidata.local", "admin123")
 
 
+@never_cache
 def login_view(request):
     try:
         ensure_demo_superuser()
@@ -38,6 +40,7 @@ def login_view(request):
     return render(request, "users/login.html", {"error": error, "prefilled_username": prefilled_username})
 
 
+@never_cache
 def register_view(request):
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
@@ -64,6 +67,7 @@ def register_view(request):
     return render(request, "users/register.html")
 
 
+@never_cache
 def logout_view(request):
     logout(request)
     return redirect("landing")

@@ -2,7 +2,51 @@
 {% block title %}MoviliData OS | Inicio{% endblock %}
 {% block body_class %}landing-body{% endblock %}
 {% block sidebar %}{% endblock %}
+{% block movibot %}{% endblock %}
 {% block content %}
+<style>
+.landing-hero .hero-content>*{opacity:0;animation:heroIn .8s ease forwards}
+.landing-hero .hero-content .hero-badge{animation-delay:.1s}
+.landing-hero .hero-content h1{animation-delay:.25s}
+.landing-hero .hero-content .hero-desc{animation-delay:.4s}
+.landing-hero .hero-content .hero-actions{animation-delay:.55s}
+.landing-hero .hero-visual{opacity:0;animation:heroIn 1s ease .3s forwards}
+@keyframes heroIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.rev{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.rev.in-view{opacity:1;transform:translateY(0)}
+.landing-metrics-bar .metric-item{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.landing-metrics-bar .metric-item.in-view{opacity:1;transform:translateY(0)}
+.landing-metrics-bar .metric-item:nth-child(1){transition-delay:0s}
+.landing-metrics-bar .metric-item:nth-child(2){transition-delay:.1s}
+.landing-metrics-bar .metric-item:nth-child(3){transition-delay:.2s}
+.landing-metrics-bar .metric-item:nth-child(4){transition-delay:.3s}
+.landing-features .feature-card:nth-child(1){transition-delay:0s}
+.landing-features .feature-card:nth-child(2){transition-delay:.12s}
+.landing-features .feature-card:nth-child(3){transition-delay:.24s}
+.landing-features .feature-card:nth-child(4){transition-delay:.36s}
+.landing-steps .step-connector{opacity:0;transition:opacity .5s ease}
+.landing-steps .step-connector.in-view{opacity:1}
+.landing-steps .step-card:nth-child(1){transition-delay:0s}
+.landing-steps .step-card:nth-child(3){transition-delay:.1s}
+.landing-steps .step-card:nth-child(5){transition-delay:.2s}
+.landing-steps .step-card:nth-child(7){transition-delay:.3s}
+.landing-steps .step-connector:nth-child(2){transition-delay:.06s}
+.landing-steps .step-connector:nth-child(4){transition-delay:.16s}
+.landing-steps .step-connector:nth-child(6){transition-delay:.26s}
+.landing-about .about-card:nth-child(1){transition-delay:0s}
+.landing-about .about-card:nth-child(2){transition-delay:.12s}
+.landing-about .about-card:nth-child(3){transition-delay:.24s}
+
+.metric-item,.feature-card,.about-card,.step-card,.hero-glass-card{transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+@media(hover:hover){
+  .metric-item:hover,.feature-card:hover,.about-card:hover,.step-card:hover{transform:translateY(-4px);border-color:rgba(56,189,248,.35);box-shadow:0 20px 50px -12px rgba(0,0,0,.45)}
+  .hero-glass-card:hover{transform:scale(1.015);border-color:rgba(56,189,248,.25);box-shadow:0 24px 60px rgba(0,0,0,.4)}
+  .btn-hero-primary:hover{box-shadow:0 20px 44px rgba(47,128,237,.38)}
+  .btn-hero-outline:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35)}
+}
+.metric-item:active,.feature-card:active,.about-card:active,.step-card:active{transform:translateY(-1px)}
+</style>
 
 <section class="landing-hero">
   <div class="hero-content">
@@ -31,7 +75,7 @@
       </div>
       <div class="glass-footer">
         <span class="pulse-dot"></span>
-        <span>Actualizado en tiempo real</span>
+        <span>Actualizado en tiempo real</span><br><small style="color:#94a3b8;font-size:.65rem;"><span class="page-updated">actualizando...</span></small>
         <span class="glass-signal">Live</span>
       </div>
     </div>
@@ -40,64 +84,60 @@
 
 <section class="landing-metrics-bar">
   <div class="metric-item">
-    <div class="metric-icon metric-icon-cyan">D</div>
-    <strong class="metric-num-cyan">+12K</strong>
-    <span>Datos procesados</span>
+    <strong id="lm-delay-risk">—</strong>
+    <span>⏱️ Riesgo de retrasos</span>
   </div>
   <div class="metric-item">
-    <div class="metric-icon metric-icon-purple">Z</div>
-    <strong class="metric-num-purple">32</strong>
-    <span>Zonas de cobertura</span>
+    <strong id="lm-route-risk">—</strong>
+    <span>🛣️ Riesgo en ruta</span>
   </div>
   <div class="metric-item">
-    <div class="metric-icon metric-icon-green">U</div>
-    <strong class="metric-num-green">98%</strong>
-    <span>Disponibilidad</span>
+    <strong id="lm-alerts">—</strong>
+    <span>🚨 Alertas activas</span>
   </div>
   <div class="metric-item">
-    <div class="metric-icon metric-icon-amber">24</div>
-    <strong class="metric-num-amber">24/7</strong>
-    <span>Monitoreo continuo</span>
+    <strong id="lm-zones">16</strong>
+    <span>📍 Comunas monitoreadas</span>
   </div>
 </section>
 
-<section class="landing-section-header">
+<section class="landing-section-header rev">
   <span class="section-badge section-badge-cyan">Beneficios</span>
   <h2>Por que usar MoviliData OS</h2>
   <p>Integramos mapas, graficas, alertas, predicciones y rutas en una sola interfaz para ayudarte a entender la movilidad de Medellin.</p>
 </section>
 
 <section class="landing-features">
-  <article class="feature-card card-accent-cyan">
+  <article class="feature-card card-accent-cyan rev">
     <div class="feature-icon-wrap icon-wrap-cyan">01</div>
     <h3>Decision rapida</h3>
     <p>Reune la informacion importante en pantallas faciles de leer para actuar con menos demora.</p>
   </article>
-  <article class="feature-card card-accent-purple">
+  <article class="feature-card card-accent-purple rev">
     <div class="feature-icon-wrap icon-wrap-purple">02</div>
     <h3>Prevencion</h3>
     <p>Permite reconocer zonas de riesgo antes de que se conviertan en puntos criticos.</p>
   </article>
-  <article class="feature-card card-accent-amber">
+  <article class="feature-card card-accent-amber rev">
     <div class="feature-icon-wrap icon-wrap-amber">03</div>
     <h3>Vision geoespacial</h3>
     <p>Usa mapas para ubicar incidentes, rutas, sectores congestionados y areas vulnerables.</p>
   </article>
-  <article class="feature-card card-accent-green">
+  <article class="feature-card card-accent-green rev">
     <div class="feature-icon-wrap icon-wrap-green">04</div>
     <h3>Analitica visual</h3>
     <p>Muestra tendencias, comparaciones y predicciones para entender mejor el comportamiento vial.</p>
   </article>
 </section>
 
-<section class="landing-section-header">
+<section class="landing-section-header rev">
   <span class="section-badge section-badge-purple">Flujo de trabajo</span>
   <h2>Comienza en 4 pasos</h2>
   <p>Un flujo de trabajo recomendado para aprovechar todo el sistema.</p>
 </section>
 
 <section class="landing-steps">
-  <div class="step-card step-cyan">
+  <div class="step-card step-cyan rev">
     <div class="step-number step-num-cyan">01</div>
     <div class="step-body">
       <h3>Entra al dashboard</h3>
@@ -105,7 +145,7 @@
     </div>
   </div>
   <div class="step-connector"><span>&gt;</span></div>
-  <div class="step-card step-purple">
+  <div class="step-card step-purple rev">
     <div class="step-number step-num-purple">02</div>
     <div class="step-body">
       <h3>Consulta el mapa</h3>
@@ -113,7 +153,7 @@
     </div>
   </div>
   <div class="step-connector"><span>&gt;</span></div>
-  <div class="step-card step-amber">
+  <div class="step-card step-amber rev">
     <div class="step-number step-num-amber">03</div>
     <div class="step-body">
       <h3>Revisa alertas</h3>
@@ -121,7 +161,7 @@
     </div>
   </div>
   <div class="step-connector"><span>&gt;</span></div>
-  <div class="step-card step-green">
+  <div class="step-card step-green rev">
     <div class="step-number step-num-green">04</div>
     <div class="step-body">
       <h3>Evalua rutas y predicciones</h3>
@@ -130,31 +170,31 @@
   </div>
 </section>
 
-<section class="landing-section-header">
+<section class="landing-section-header rev">
   <span class="section-badge section-badge-amber">Informacion</span>
   <h2>Todo lo que necesitas saber</h2>
   <p>MoviliData OS reune datos, mapas y analitica en un solo lugar.</p>
 </section>
 
 <section class="landing-about">
-  <div class="about-card about-card-top-cyan">
+  <div class="about-card about-card-top-cyan rev">
     <div class="about-icon-box icon-box-cyan">M</div>
     <h3>Que muestra</h3>
     <p>Trafico por zona, alertas preventivas, rutas recomendadas, zonas criticas, predicciones de congestion y graficas urbanas.</p>
   </div>
-  <div class="about-card about-card-top-purple">
+  <div class="about-card about-card-top-purple rev">
     <div class="about-icon-box icon-box-purple">A</div>
     <h3>Para quien sirve</h3>
     <p>Analistas de movilidad, equipos operativos, entidades publicas, estudiantes y proyectos de ciudad inteligente.</p>
   </div>
-  <div class="about-card about-card-top-green">
+  <div class="about-card about-card-top-green rev">
     <div class="about-icon-box icon-box-green">S</div>
     <h3>Datos usados</h3>
     <p>Informacion climatica, ubicaciones urbanas, incidentes disponibles, reglas de riesgo y procesamiento predictivo.</p>
   </div>
 </section>
 
-<section class="landing-cta">
+<section class="landing-cta rev">
   <div class="cta-content">
     <span class="section-badge section-badge-green">Comienza ahora</span>
     <h2>Explora la movilidad de Medellin</h2>
@@ -163,4 +203,49 @@
   </div>
 </section>
 
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  var e=document.querySelectorAll('.landing-metrics-bar .metric-item,.rev,.landing-features .feature-card,.landing-steps,.landing-steps .step-card,.landing-steps .step-connector,.landing-about .about-card');
+  if(!e.length)return;
+  if('IntersectionObserver'in window){
+    var o=new IntersectionObserver(function(n){
+      n.forEach(function(n){
+        if(n.isIntersecting){n.target.classList.add('in-view');o.unobserve(n.target)}
+      })
+    },{rootMargin:'0px 0px -60px 0px',threshold:.1});
+    e.forEach(function(n){o.observe(n)})
+  }else e.forEach(function(n){n.classList.add('in-view')})
+});
+</script>
+<script>
+(async () => {
+  try {
+    const r = await fetch("/api/bootstrap?_=" + Date.now(), 
+      { headers: { Accept: "application/json" } });
+    const d = await r.json();
+    if (d.metrics) {
+      const delay = d.metrics.find(m => m.label.includes("Riesgo de retrasos"));
+      const route = d.metrics.find(m => m.label.includes("Riesgo en ruta"));
+      const alerts = d.metrics.find(m => m.label.includes("Alertas"));
+      if (delay) document.getElementById("lm-delay-risk").textContent = 
+        delay.value + "% • " + (delay.level||"");
+      if (route) document.getElementById("lm-route-risk").textContent = 
+        route.value + "% • " + (route.level||"");
+      if (alerts) document.getElementById("lm-alerts").textContent = 
+        alerts.value;
+    }
+    document.querySelectorAll(".metric-item").forEach((el, i) => {
+      setTimeout(() => el.classList.add("in-view"), i * 120);
+    });
+  } catch (e) {
+    document.getElementById("lm-delay-risk").textContent = "—";
+    document.getElementById("lm-route-risk").textContent = "—";
+    document.getElementById("lm-alerts").textContent = "—";
+    document.querySelectorAll(".metric-item").forEach((el, i) => {
+      setTimeout(() => el.classList.add("in-view"), i * 120);
+    });
+  }
+})();
+</script>
 {% endblock %}
+{% block scripts %}{% endblock %}

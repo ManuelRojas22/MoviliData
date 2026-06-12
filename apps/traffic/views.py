@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from apps.dashboard.services import demo_points, bootstrap_data
+from apps.dashboard.services import current_points, bootstrap_data
 
 
 def traffic(request):
@@ -18,10 +18,10 @@ def api_traffic(request):
             "status": "critico" if p["congestion"] >= 75 else "moderado",
             "incidents": p["incidents"],
             "free_flow_speed": p["free_flow_speed"],
-            "flow_confidence": p["flow_confidence"],
+            "flow_confidence": round(p["flow_confidence"] * 100) if p["flow_confidence"] is not None else None,
             "road_closure": p["road_closure"],
             "source": p["source"],
-        } for p in demo_points()]
+        } for p in current_points()]
         return JsonResponse({"traffic": records})
     except Exception as e:
         return JsonResponse({"traffic": [], "error": str(e)}, status=200)

@@ -1,0 +1,567 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/weather.css' %}">
+<div class="clima-widget">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h5 style="color:#f4f7fb;font-weight:700;margin:0;font-size:1.1rem;">🌤 Clima</h5>
+      <small style="color:#64748b;font-size:.75rem;">Medellín, Colombia</small>
+      <div><small style="color:#64748b;font-size:.7rem;"><span id="climaUpdated">actualizando...</span> <span id="climaCountdown" style="color:#64748b;font-size:.7rem;"></span></small></div>
+    </div>
+    <button class="btn btn-info" id="climaRefreshBtn">Actualizar</button>
+  </div>
+  <div class="row g-3 mb-4" id="climaCurrent"></div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="panel" style="background:#101b2c;border-radius:12px;padding:1.25rem;height:100%;min-height:320px;">
+        <h6 style="color:#94a3b8;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;font-weight:600;">Pronóstico horario — Próximas 24h</h6>
+        <canvas id="climaChart" height="200"></canvas>
+        <div id="climaChartSpinner" class="spinner" style="margin:2rem auto;width:2rem;height:2rem;"></div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="panel" style="background:#101b2c;border-radius:12px;padding:1.25rem;height:100%;min-height:320px;display:flex;flex-direction:column;">
+        <h6 style="color:#94a3b8;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;font-weight:600;flex-shrink:0;">Condiciones por comuna — Medellín</h6>
+        <div style="display:flex;gap:4px;margin-bottom:.5rem;flex-shrink:0;flex-wrap:wrap;" id="climaMapFilters">
+          <button class="btn btn-sm map-filter-btn" data-mode="all" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer;">General</button>
+          <button class="btn btn-sm map-filter-btn" data-mode="congestion" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer;">Congestión</button>
+          <button class="btn btn-sm map-filter-btn" data-mode="rain" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer;">Lluvia</button>
+          <button class="btn btn-sm map-filter-btn" data-mode="speed" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer;">Velocidad</button>
+        </div>
+        <div id="climaLegend" style="display:flex;gap:10px;margin-bottom:.4rem;flex-shrink:0;flex-wrap:wrap;font-size:.65rem;color:#94a3b8;"></div>
+        <div id="climaMap" style="flex:1;border-radius:8px;background:#101b2c;min-height:320px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3" id="climaForecast"></div>
+</div>
+
+<script>
+(function(){
+  var LAT=6.2442, LNG=-75.5812, TZ='America%2FBogota';
+  var API='https://api.open-meteo.com/v1/forecast?latitude='+LAT+'&longitude='+LNG
+    +'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m'
+    +'&hourly=temperature_2m,precipitation_probability,weather_code'
+    +'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,precipitation_probability_max,wind_speed_10m_max'
+    +'&timezone='+TZ+'&forecast_hours=24&forecast_days=8';
+
+  var DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  var SHORT=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  var BARRIOS=[
+    {name:'Popular',lat:6.3085,lng:-75.5579},
+    {name:'Santa Cruz',lat:6.2985,lng:-75.5612},
+    {name:'Manrique',lat:6.2746,lng:-75.5523},
+    {name:'Aranjuez',lat:6.2860,lng:-75.5650},
+    {name:'Castilla',lat:6.2923,lng:-75.5707},
+    {name:'Doce de Octubre',lat:6.2980,lng:-75.5880},
+    {name:'Robledo',lat:6.2775,lng:-75.5909},
+    {name:'Villa Hermosa',lat:6.2620,lng:-75.5530},
+    {name:'Buenos Aires',lat:6.2530,lng:-75.5570},
+    {name:'Centro',lat:6.2518,lng:-75.5636},
+    {name:'Laureles',lat:6.2459,lng:-75.5964},
+    {name:'La América',lat:6.2420,lng:-75.5880},
+    {name:'San Javier',lat:6.2355,lng:-75.6050},
+    {name:'El Poblado',lat:6.2088,lng:-75.5678},
+    {name:'Guayabal',lat:6.2107,lng:-75.5888},
+    {name:'Belen',lat:6.2311,lng:-75.6038},
+  ];
+
+  var countdownSeconds=300, countdownTimer=null, refreshTimer=null;
+  var mapInstance=null, mapMarkers=[];
+  var mapFilterMode='all';
+  var lastWeatherData=null, lastZoneRain=null;
+
+  function wmoEmoji(c){
+    if(c===0)return '☀️';
+    if(c<=2)return '⛅';
+    if(c===3)return '☁️';
+    if(c===45||c===48)return '🌫️';
+    if(c>=51&&c<=55)return '🌦️';
+    if(c>=56&&c<=57)return '🌧️';
+    if(c>=61&&c<=65)return '🌧️';
+    if(c>=66&&c<=67)return '🌧️';
+    if(c>=71&&c<=77)return '❄️';
+    if(c>=80&&c<=82)return '🌦️';
+    if(c>=85&&c<=86)return '❄️';
+    if(c>=95)return '⛈️';
+    return '❓';
+  }
+
+  function wmoDesc(c){
+    if(c===0)return 'Despejado';
+    if(c===1)return 'Mayormente despejado';
+    if(c===2)return 'Parcialmente nublado';
+    if(c===3)return 'Nublado';
+    if(c===45||c===48)return 'Niebla';
+    if(c>=51&&c<=55)return 'Llovizna';
+    if(c>=56&&c<=57)return 'Llovizna helada';
+    if(c>=61&&c<=62)return 'Lluvia leve';
+    if(c===63)return 'Lluvia moderada';
+    if(c>=64&&c<=65)return 'Lluvia fuerte';
+    if(c>=66&&c<=67)return 'Lluvia helada';
+    if(c>=71&&c<=77)return 'Nieve';
+    if(c===80)return 'Chubascos ligeros';
+    if(c===81)return 'Chubascos moderados';
+    if(c===82)return 'Chubascos fuertes';
+    if(c>=85&&c<=86)return 'Chubascos de nieve';
+    if(c===95)return 'Tormenta';
+    if(c>=96)return 'Tormenta con granizo';
+    return '—';
+  }
+
+  function trafficBadge(prob){
+    if(prob>=70)return '<span class="badge" style="background:#dc2626;color:#fff;">🔴 Tráfico pesado</span>';
+    if(prob>=30)return '<span class="badge" style="background:#eab308;color:#000;">🟡 Tráfico moderado</span>';
+    return '<span class="badge" style="background:#22c55e;color:#fff;">🟢 Tráfico normal</span>';
+  }
+
+  function humidityLabel(h){
+    if(h>=70)return 'Muy húmedo';
+    if(h>=55)return 'Húmedo';
+    if(h>=35)return 'Normal';
+    return 'Seco';
+  }
+
+  function windLabel(w){
+    if(w<1)return 'Calma';
+    return w+' km/h';
+  }
+
+  function colorForMode(mode, zona){
+    var noData=(zona.congestion===0||zona.congestion==null)&&(zona.speed===30||zona.speed==null)&&(zona.prob===0||zona.prob==null);
+    if(mode==='all'){
+      if(noData)return '#64748b';
+      var c=zona.congestion||0, s=zona.speed||30, r=zona.prob||0;
+      var score=0;
+      if(c>=75)score+=3; else if(c>=45)score+=2; else score+=1;
+      if(s<=20)score+=3; else if(s<=35)score+=2; else score+=1;
+      if(r>=50)score+=3; else if(r>=20)score+=2; else score+=1;
+      var avg=score/3;
+      if(avg>=2.5)return '#ef4444';
+      if(avg>=1.8)return '#f59e0b';
+      return '#22c55e';
+    }
+    if(mode==='congestion'){
+      if(noData)return '#64748b';
+      var val=zona.congestion||0;
+      if(val>=75)return '#ef4444';
+      if(val>=45)return '#f59e0b';
+      return '#22c55e';
+    }
+    if(mode==='rain'){
+      if(noData)return '#64748b';
+      var val=zona.prob||0;
+      if(val>=50)return '#2563eb';
+      if(val>=20)return '#60a5fa';
+      return '#93c5fd';
+    }
+    if(mode==='speed'){
+      if(noData)return '#64748b';
+      var val=zona.speed||30;
+      if(val<=20)return '#ef4444';
+      if(val<=35)return '#f59e0b';
+      return '#22c55e';
+    }
+    return '#22c55e';
+  }
+
+  function renderLegend(mode){
+    var el=document.getElementById('climaLegend');
+    if(!el)return;
+    var items;
+    if(mode==='all'||mode==='congestion'){
+      items=[
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:3px;"></span>Alto</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:3px;"></span>Medio</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:3px;"></span>Bajo</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#64748b;margin-right:3px;"></span>Sin datos</span>',
+      ];
+    } else if(mode==='rain'){
+      items=[
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;margin-right:3px;"></span>Alta</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#60a5fa;margin-right:3px;"></span>Media</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#93c5fd;margin-right:3px;"></span>Baja</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#64748b;margin-right:3px;"></span>Sin datos</span>',
+      ];
+    } else {
+      items=[
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:3px;"></span>Lento</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:3px;"></span>Moderado</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:3px;"></span>Rápido</span>',
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#64748b;margin-right:3px;"></span>Sin datos</span>',
+      ];
+    }
+    el.innerHTML=items.join('');
+  }
+
+  function shortDay(iso){
+    var d=new Date(iso+'T12:00:00');
+    return SHORT[d.getDay()];
+  }
+
+  function hourLabel(iso){
+    return iso.slice(11,16);
+  }
+
+  function renderCurrent(d){
+    var c=d.current;
+    var windVal=c.wind_speed_10m;
+    var humVal=c.relative_humidity_2m;
+    var cards=[
+      {icon:'🌡️',label:'Temperatura',value:c.temperature_2m+'°',unit:'Sensación térmica '+c.apparent_temperature+'°',border:'#f59e0b',desc: c.temperature_2m>=30 ? 'Muy caluroso' : c.temperature_2m>=25 ? 'Caluroso' : c.temperature_2m>=18 ? 'Templado' : 'Frío'},
+      {icon:'💧',label:'Humedad',value:humVal+'%',unit:humidityLabel(humVal),border:'#3b82f6',desc: ''},
+      {icon:'💨',label:'Viento',value:windLabel(windVal),unit:windVal>=1 ? windVal+' km/h' : '',border:'#22c55e',desc: windVal>=30 ? 'Ventoso' : windVal>=15 ? 'Brisa moderada' : windVal>=1 ? 'Brisa ligera' : 'Sin viento'},
+      {icon:'🌧️',label:'Lluvia',value:(c.rain<=0?'Sin lluvia':c.rain<=2?'Lluvia ligera':c.rain<=10?'Lluvia moderada':'Lluvia fuerte'),unit:c.rain+' mm',border:'#38bdf8',desc: c.rain<=0 ? 'Solo si llueve' : c.rain<=2 ? 'Cubrirse' : 'Usar paraguas'},
+    ];
+    var html=cards.map(function(card){
+      return '<div class="col-6 col-md-3"><div class="card h-100 border-0" style="background:#101b2c;border-radius:10px;border-left:3px solid '+card.border+';">'
+        +'<div class="card-body p-3">'
+        +'<div style="font-size:2rem;margin-bottom:.1rem;line-height:1.1;">'+card.icon+'</div>'
+        +'<small style="color:#94a3b8;font-size:.7rem;text-transform:uppercase;">'+card.label+'</small>'
+        +'<div style="color:#f4f7fb;font-size:1.3rem;font-weight:700;margin:.15rem 0;">'+card.value+'</div>'
+        +'<div style="font-size:.65rem;color:#64748b;margin-bottom:.1rem;">'+(card.unit||'')+'</div>'
+        +'<div style="font-size:.6rem;color:#64748b;">'+card.desc+'</div>'
+        +'</div></div></div>';
+    }).join('');
+    document.getElementById('climaCurrent').innerHTML=html;
+  }
+
+  function uvIndex(tmax){
+    if(tmax>=30)return {val:'🔆 Alto',color:'#f59e0b'};
+    if(tmax>=26)return {val:'☀️ Moderado',color:'#22c55e'};
+    return {val:'🌤 Bajo',color:'#64748b'};
+  }
+  function recomendacion(code, rain){
+    if(rain>5)return '☂️ Lleva paraguas';
+    if(code>=95)return '⚠️ Evita salir';
+    if(code>=80)return '🧥 Lleva impermeable';
+    if(code>=51)return '☂️ Posible lluvia';
+    if(code<=1)return '😎 Buen día para salir';
+    return '👍 Condiciones normales';
+  }
+  function horaPico(i, times){
+    var d=new Date(times[i]+'T12:00:00');
+    var dow=d.getDay();
+    if(dow===0||dow===6)return '🕙 Pico: 10am–1pm';
+    return '🕖 Pico: 7–9am · 5–7pm';
+  }
+  function renderForecast(d){
+    var daily=d.daily;
+    var items=[];
+    for(var i=0;i<7;i++){
+      var code=daily.weather_code[i];
+      var max=daily.temperature_2m_max[i];
+      var min=daily.temperature_2m_min[i];
+      var rain=daily.rain_sum[i]||0;
+      var prob=daily.precipitation_probability_max[i]||0;
+      var wind=daily.wind_speed_10m_max[i];
+      var uv=uvIndex(max);
+      var reco=recomendacion(code, rain);
+      var pico=horaPico(i, daily.time);
+      var isToday=(daily.time[i]===new Date().toISOString().slice(0,10));
+      var cardStyle='background:'+(isToday?'#1a2738':'#101b2c')+';border-radius:10px;'+(isToday?'border:1px solid #2563eb;':'border:1px solid transparent;');
+      items.push('<div class="col-6 col-md-3 col-lg mb-2">'
+        +'<div class="card h-100 border-0" style="'+cardStyle+'">'
+        +'<div class="card-body p-3" style="display:flex;flex-direction:column;align-items:center;text-align:center;">'
+        +'<small style="color:#94a3b8;font-size:.75rem;font-weight:700;text-transform:uppercase;margin-bottom:.2rem;">'+shortDay(daily.time[i])+'</small>'
+        +'<span style="font-size:1.6rem;margin-bottom:.15rem;line-height:1.2;">'+wmoEmoji(code)+'</span>'
+        +'<div style="color:#f4f7fb;font-size:.9rem;font-weight:700;">'+max.toFixed(0)+'° <span style="color:#64748b;font-weight:400;font-size:.75rem;">/'+min.toFixed(0)+'°</span></div>'
+        +'<div style="font-size:.7rem;color:#64748b;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.03em;">'+wmoDesc(code)+'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:.7rem;color:#94a3b8;width:100%;margin-bottom:.4rem;">'
+        +'<span style="text-align:start;">💨 '+wind+' km/h</span><span style="text-align:end;">🌧️ '+(rain<=0?'Sin lluvia':rain<=5?'Ligera':rain<=15?'Moderada':'Fuerte')+'</span>'
+        +'<span style="text-align:start;color:'+uv.color+'">'+uv.val+'</span><span style="text-align:end;">Prob. lluvia: '+prob+'%</span>'
+        +'</div>'
+        +'<div style="font-size:.7rem;color:#cbd5e1;background:#0f172a;border-radius:4px;padding:3px 8px;width:100%;margin-bottom:.3rem;">'+reco+'</div>'
+        +'<div style="font-size:.7rem;">'+trafficBadge(prob)+'</div>'
+        +'</div></div></div>');
+    }
+    document.getElementById('climaForecast').innerHTML=items.join('');
+  }
+
+  function renderChart(d){
+    var hourly=d.hourly;
+    var labels=hourly.time.map(hourLabel);
+    var temps=hourly.temperature_2m;
+    var probs=hourly.precipitation_probability;
+
+    var spinner=document.getElementById('climaChartSpinner');
+    if(spinner)spinner.style.display='none';
+
+    var ctx=document.getElementById('climaChart');
+    if(!ctx)return;
+    var parent=ctx.parentNode;
+    if(parent&&spinner)parent.removeChild(spinner);
+
+    new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:labels,
+        datasets:[
+          {
+            label:'Temperatura °C',
+            type:'line',
+            data:temps,
+            yAxisID:'yTemp',
+            borderColor:'#f59e0b',
+            backgroundColor:'rgba(245,158,11,0.08)',
+            fill:true,
+            tension:.3,
+            pointRadius:1,
+            pointHitRadius:6,
+            borderWidth:2,
+          },
+          {
+            label:'Prob. lluvia %',
+            type:'bar',
+            data:probs,
+            yAxisID:'yProb',
+            backgroundColor:'rgba(59,130,246,0.4)',
+            borderColor:'rgba(59,130,246,0.7)',
+            borderWidth:1,
+            borderRadius:2,
+          }
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{
+            labels:{color:'#94a3b8',font:{size:11},boxWidth:12,boxHeight:12}
+          },
+          tooltip:{
+            backgroundColor:'#0f172a',
+            titleColor:'#f4f7fb',
+            bodyColor:'#cbd5e1',
+            borderColor:'#1e293b',
+            borderWidth:1,
+            padding:8,
+          }
+        },
+        scales:{
+          x:{
+            ticks:{color:'#64748b',font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:12},
+            grid:{display:false}
+          },
+          yTemp:{
+            position:'left',
+            title:{display:true,text:'Temperatura °C',color:'#94a3b8',font:{size:10}},
+            ticks:{color:'#64748b',font:{size:9}},
+            grid:{color:'rgba(148,163,184,0.08)'},
+            beginAtZero:false,
+          },
+          yProb:{
+            position:'right',
+            min:0,
+            max:100,
+            title:{display:true,text:'%',color:'#94a3b8',font:{size:10}},
+            ticks:{color:'#64748b',font:{size:9},callback:function(v){return v+'%'}},
+            grid:{display:false},
+          }
+        }
+      }
+    });
+  }
+
+  function modeLabel(mode){
+    if(mode==='congestion')return 'Congestión';
+    if(mode==='rain')return 'Prob. lluvia';
+    if(mode==='speed')return 'Velocidad';
+    return 'General';
+  }
+  function modeIcon(mode){
+    if(mode==='congestion')return '🚗';
+    if(mode==='rain')return '🌧️';
+    if(mode==='speed')return '⚡';
+    return '📊';
+  }
+
+  function renderMap(d, zoneRain){
+    var c=d.current;
+    var code=c.weather_code||0;
+    var temp=c.temperature_2m||'—';
+    var hum=c.relative_humidity_2m||'—';
+    var wind=c.wind_speed_10m||'—';
+    var container=document.getElementById('climaMap');
+    if(!container)return;
+    if(!mapInstance){
+      mapInstance=L.map(container,{zoomControl:false,attributionControl:false}).setView([LAT,LNG],12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        maxZoom:18,
+      }).addTo(mapInstance);
+      L.control.zoom({position:'bottomright'}).addTo(mapInstance);
+    }
+    mapMarkers.forEach(function(m){mapInstance.removeLayer(m);});
+    mapMarkers=[];
+    BARRIOS.forEach(function(b){
+      var zona=zoneRain[b.name]||{rain:0,prob:0,congestion:0,speed:30};
+      var color=colorForMode(mapFilterMode, zona);
+      var isNoData=color==='#64748b';
+      var R=b.name==='El Poblado'?14:12;
+      var circle=L.circleMarker([b.lat,b.lng],{
+        radius:R,
+        fillColor:color,
+        fillOpacity:isNoData?0.4:0.6,
+        color:'#fff',
+        weight:2,
+      }).addTo(mapInstance);
+      function popupRows(zona, mode){
+        var rows='';
+        if(mode==='all'){
+          rows+='<span style="color:#94a3b8;">🚗 Congestión</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+(zona.congestion||0)+'%</span>'
+            +'<span style="color:#94a3b8;">🌧️ Prob. lluvia</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+(zona.prob||0)+'%</span>'
+            +'<span style="color:#94a3b8;">⚡ Velocidad</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+(zona.speed||30)+' km/h</span>';
+        } else {
+          var iconMap={'congestion':'🚗','rain':'🌧️','speed':'⚡'};
+          var labelMap={'congestion':'Congestión','rain':'Prob. lluvia','speed':'Velocidad'};
+          var valMap={'congestion':(zona.congestion||0)+'%','rain':(zona.prob||0)+'%','speed':(zona.speed||30)+' km/h'};
+          var icon=iconMap[mode]||'📊', label=labelMap[mode]||mode, val=valMap[mode]||'—';
+          rows+='<span style="color:#f4f7fb;font-weight:700;">'+icon+' '+label+'</span><span style="text-align:end;color:#f4f7fb;font-weight:700;">'+val+'</span>';
+        }
+        rows+='<span style="color:#94a3b8;">🌡️ Temp</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+temp+'°C</span>'
+          +'<span style="color:#94a3b8;">💧 Humedad</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+hum+'%</span>'
+          +'<span style="color:#94a3b8;">💨 Viento</span><span style="text-align:end;color:#f4f7fb;font-weight:600;">'+wind+' km/h</span>';
+        return rows;
+      }
+      const tooltipHtml = '<div style="color:#f4f7fb;min-width:200px;">'
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+        +'<span style="font-size:1.3rem;">'+wmoEmoji(code)+'</span>'
+        +'<strong style="font-size:1rem;">☁️ '+b.name+'</strong>'
+        +'<span style="margin-left:auto;font-size:.55rem;color:#64748b;background:#1e293b;padding:1px 5px;border-radius:4px;">'+modeLabel(mapFilterMode)+'</span>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 6px;font-size:.8rem;">'
+        +popupRows(zona, mapFilterMode)
+        +'</div>'
+        +'<div style="margin-top:4px;text-align:center;">'+trafficBadge(zona.prob)+'</div>'
+        +'</div>';
+      circle.bindTooltip(tooltipHtml, {direction:'top',offset:L.point(0,-6),sticky:true});
+      mapMarkers.push(circle);
+    });
+    // Logo
+    if (!window._climaLogoAdded) {
+      const logoCtrl = L.control({position: 'bottomright'});
+      logoCtrl.onAdd = function() {
+        const d = L.DomUtil.create('div');
+        d.innerHTML = '<div style="background:rgba(9,16,28,.75);border:1px solid #1e293b;border-radius:4px;padding:3px 7px;font-size:.6rem;color:#64748b;font-weight:700;letter-spacing:.05em;">MoviliData OS 🌤</div>';
+        return d;
+      };
+      logoCtrl.addTo(mapInstance);
+      window._climaLogoAdded = true;
+    }
+    setTimeout(function(){mapInstance.invalidateSize();},100);
+    renderLegend(mapFilterMode);
+  }
+
+  function updateTimestamp(){
+    var el=document.getElementById('climaUpdated');
+    if(el)el.textContent='actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function startCountdown(){
+    countdownSeconds=300;
+    var el=document.getElementById('climaCountdown');
+    if(!el)return;
+    if(countdownTimer)clearInterval(countdownTimer);
+    el.textContent='— próx. actualización en 4:59';
+    countdownTimer=setInterval(function(){
+      countdownSeconds--;
+      if(countdownSeconds<=0){
+        clearInterval(countdownTimer);
+        countdownTimer=null;
+        el.textContent='';
+        loadWeather();
+        return;
+      }
+      var m=Math.floor(countdownSeconds/60);
+      var s=countdownSeconds%60;
+      el.textContent='— próx. actualización en '+m+':'+(s<10?'0':'')+s;
+    },1000);
+  }
+
+  function setLoading(loading){
+    var btn=document.getElementById('climaRefreshBtn');
+    if(!btn)return;
+    if(loading){
+      btn.disabled=true;
+      btn.textContent='Cargando...';
+    }else{
+      btn.disabled=false;
+      btn.textContent='Actualizar';
+    }
+  }
+
+  function loadWeather(){
+    var el=document.getElementById('climaCurrent');
+    if(!el)return;
+    setLoading(true);
+    Promise.all([
+      fetch(API).then(function(r){return r.json();}),
+      fetch('/api/bootstrap?_='+Date.now(),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).catch(function(){return null;})
+    ])
+      .then(function(results){
+        var d=results[0], boot=results[1];
+        var zoneRain={};
+        if(boot&&boot.zones){
+          boot.zones.forEach(function(z){zoneRain[z.zone]={rain:0,prob:z.rain_probability||0,congestion:z.congestion_level||0,speed:z.average_speed||30};});
+        if(d&&d.current){var realRain=d.current.rain||0;Object.keys(zoneRain).forEach(function(k){zoneRain[k].rain=realRain;});}
+        }
+        renderCurrent(d);
+        renderForecast(d);
+        renderChart(d);
+        lastWeatherData=d; lastZoneRain=zoneRain;
+        renderMap(d, zoneRain);
+        updateTimestamp();
+        startCountdown();
+        setLoading(false);
+      })
+      .catch(function(e){
+        setLoading(false);
+        var current=document.getElementById('climaCurrent');
+        if(current&&!current.querySelector('.clima-error')){
+          var errDiv=document.createElement('div');
+          errDiv.className='clima-error';
+          errDiv.innerHTML='<div class="col-12"><div class="alert alert-danger m-0" style="background:#1e293b;border:none;color:#f87171;font-size:.85rem;">Error al cargar datos del clima</div></div>';
+          current.appendChild(errDiv);
+        }
+      });
+  }
+
+  function init(){
+    if(typeof Chart==='undefined'||typeof L==='undefined'){
+      setTimeout(init,150);
+      return;
+    }
+    var el=document.getElementById('climaCurrent');
+    if(!el)return;
+    var btn=document.getElementById('climaRefreshBtn');
+    if(btn)btn.addEventListener('click',function(){
+      if(countdownTimer)clearInterval(countdownTimer);
+      countdownTimer=null;
+      loadWeather();
+    });
+    var filterBtns=document.querySelectorAll('.map-filter-btn');
+    filterBtns.forEach(function(fb){
+      fb.addEventListener('click',function(){
+        filterBtns.forEach(function(b){
+          b.style.background='#1e293b';
+          b.style.color='#94a3b8';
+          b.style.border='1px solid #334155';
+        });
+        this.style.background='#2563eb';
+        this.style.color='#fff';
+        this.style.border='none';
+        mapFilterMode=this.getAttribute('data-mode');
+        if(lastWeatherData&&lastZoneRain)renderMap(lastWeatherData, lastZoneRain);
+      });
+    });
+    loadWeather();
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init);
+  } else {
+    init();
+  }
+})();
+</script>

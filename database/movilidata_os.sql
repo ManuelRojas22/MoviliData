@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS accidents (
   latitude DECIMAL(9,6) NOT NULL,
   longitude DECIMAL(9,6) NOT NULL,
   occurred_at DATETIME NOT NULL,
-  INDEX idx_accidents_zone_time (zone, occurred_at)
+  INDEX idx_accidents_zone_time (zone, occurred_at),
+  INDEX idx_accidents_occurred_at (occurred_at)
 );
 
 CREATE TABLE IF NOT EXISTS weather_records (
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS weather_records (
   zone VARCHAR(100) NOT NULL,
   rain_mm DECIMAL(6,2) NOT NULL,
   temperature DECIMAL(4,1) NOT NULL,
-  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_weather_recorded_at (recorded_at)
 );
 
 -- Tables managed by Django (CREATE IF NOT EXISTS = no-op when migrate already ran)
@@ -87,6 +89,9 @@ DROP TABLE IF EXISTS traffic_records;
 DROP TABLE IF EXISTS safe_routes;
 DROP TABLE IF EXISTS traffic_predictions;
 
+-- ⚠️ DATOS DE DEMOSTRACIÓN INICIAL — No representan eventos reales
+-- Estos datos se reemplazarán cuando el colector (collect_traffic) acumule historia real
+
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE alerts_mobilityalert;
 TRUNCATE TABLE predictions_trafficprediction;
@@ -98,9 +103,8 @@ TRUNCATE TABLE maps_riskzone;
 TRUNCATE TABLE users_demo;
 SET FOREIGN_KEY_CHECKS = 1;
 
-INSERT INTO users_demo (username, email, role) VALUES
-('admin','admin@movilidata.local','Administrador'),
-('analista','analista@movilidata.local','Analista de movilidad');
+-- Crear usuarios reales con: python manage.py createsuperuser
+-- No insertar usuarios demo con credenciales hardcodeadas
 
 INSERT INTO maps_riskzone (id, name, latitude, longitude, risk_score, reason, updated_at) VALUES
 (1,'El Poblado',6.208800,-75.567800,52,'Alto flujo y lluvias localizadas',NOW()),
@@ -112,15 +116,15 @@ INSERT INTO maps_riskzone (id, name, latitude, longitude, risk_score, reason, up
 (7,'Guayabal',6.210700,-75.588800,58,'Corredor industrial con carga pesada',NOW()),
 (8,'Castilla',6.292300,-75.570700,69,'Flujo denso y eventos viales',NOW());
 
-INSERT INTO traffic_trafficrecord (zone, latitude, longitude, congestion_level, average_speed, recorded_at) VALUES
-('El Poblado',6.208800,-75.567800,45,29.4,NOW()),
-('Laureles',6.245900,-75.596400,54,26.9,NOW()),
-('Centro',6.251800,-75.563600,63,24.3,NOW()),
-('Belen',6.231100,-75.603800,72,21.8,NOW()),
-('Robledo',6.277500,-75.590900,81,19.3,NOW()),
-('Manrique',6.274600,-75.552300,76,20.5,NOW()),
-('Guayabal',6.210700,-75.588800,58,25.8,NOW()),
-('Castilla',6.292300,-75.570700,69,22.6,NOW());
+INSERT INTO traffic_trafficrecord (zone, latitude, longitude, congestion_level, average_speed, recorded_at, source) VALUES
+('El Poblado',6.208800,-75.567800,45,29.4,NOW(),'desconocido'),
+('Laureles',6.245900,-75.596400,54,26.9,NOW(),'desconocido'),
+('Centro',6.251800,-75.563600,63,24.3,NOW(),'desconocido'),
+('Belen',6.231100,-75.603800,72,21.8,NOW(),'desconocido'),
+('Robledo',6.277500,-75.590900,81,19.3,NOW(),'desconocido'),
+('Manrique',6.274600,-75.552300,76,20.5,NOW(),'desconocido'),
+('Guayabal',6.210700,-75.588800,58,25.8,NOW(),'desconocido'),
+('Castilla',6.292300,-75.570700,69,22.6,NOW(),'desconocido');
 
 INSERT INTO accidents (zone, severity, latitude, longitude, occurred_at) VALUES
 ('Centro','alta',6.251800,-75.563600,NOW() - INTERVAL 3 HOUR),

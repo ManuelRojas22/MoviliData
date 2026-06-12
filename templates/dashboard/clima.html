@@ -1,0 +1,6 @@
+{% extends "base/base.html" %}
+{% block title %}Weather | MoviliData OS{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Environmental monitoring</p><h1>Weather & Traffic Impact</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div></div>
+<section>{% include 'dashboard/_clima_panel.html' %}</section>
+{% endblock %}

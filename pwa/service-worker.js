@@ -1,4 +1,4 @@
-const CACHE_NAME = "movilidata-os-v1";
+const CACHE_NAME = "movilidata-os-v4";
 const ASSETS = [
   "/",
   "/dashboard/",
@@ -43,7 +43,12 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+    ])
+  );
 });
 
 self.addEventListener("fetch", event => {
@@ -63,14 +68,11 @@ self.addEventListener("fetch", event => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      caches.match(request).then(cached => {
-        const fetchPromise = fetch(request).then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-          return response;
-        }).catch(() => cached || caches.match("/pwa/offline.html"));
-        return cached || fetchPromise;
-      })
+      fetch(request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        return response;
+      }).catch(() => caches.match(request).then(cached => cached || caches.match("/pwa/offline.html")))
     );
     return;
   }

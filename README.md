@@ -431,10 +431,51 @@ Acceder:
 ```text
 http://127.0.0.1:8000
 ```
+---
+## 📊 Fuentes de datos y precisión
+
+| Dato | Fuente | Tiempo real |
+|------|--------|-------------|
+| Clima (temperatura, lluvia) | Open-Meteo API | ✅ Sí |
+| Accidentes viales | Alcaldía de Medellín ArcGIS | ✅ Sí (cuando el servidor responde) |
+| Flujo de tráfico por segmento | TomTom Traffic API | ✅ Sí (requiere API key) |
+| Congestión por zona (sin TomTom) | Perfiles horarios estimados | ⚠️ Estimación |
+| Predicciones ML | RandomForest sobre historial BD | ⚠️ Precisión mejora con el tiempo |
+| Rutas sugeridas | OSRM (OpenStreetMap) | ✅ Sí |
+
+> **Nota:** La congestión vehicular mostrada usa datos de TomTom cuando la API key está
+> configurada. Sin ella, el sistema calcula estimaciones basadas en patrones horarios
+> típicos de Medellín. Configurar `TOMTOM_API_KEY` en `.env` activa los datos reales.
 
 ---
 
-# 🔒 Seguridad
+## ⚙️ Recolección de datos históricos
+
+Para que el modelo de Machine Learning funcione con datos reales, ejecuta el colector:
+
+```bash
+# Una sola vez:
+python manage.py collect_traffic
+
+# En modo continuo (cada 10 minutos):
+python manage.py collect_traffic --loop
+```
+
+> El modelo ML requiere al menos 20 registros históricos. Con menos datos usa
+> una heurística de respaldo. Tras ~2 días de ejecución continua, el modelo
+> comienza a entrenarse sobre datos reales.
+
+---
+
+## 📦 Datos de demostración vs datos reales
+
+- Los datos del archivo `database/movilidata_os.sql` son semilla de arranque para la base de datos — **no representan eventos reales**.
+- El comando `python manage.py collect_traffic --loop` acumula datos reales de tráfico, clima y accidentes con el tiempo.
+- Tras aproximadamente 30 días de ejecución continua, el modelo ML se entrena sobre datos predominantemente reales.
+
+---
+
+## 🔒 Seguridad
 
 La plataforma implementa:
 
@@ -443,10 +484,11 @@ La plataforma implementa:
 * Protección CSRF.
 * Validación de formularios.
 * Gestión segura de datos.
+* Variables de entorno mediante `.env` (nunca subir al repositorio).
+```
 
 ---
-
-# 📈 Impacto Esperado
+## 📈 Impacto Esperado
 
 MoviliData OS busca contribuir a:
 

@@ -9,7 +9,11 @@ async function renderDashboard() {
   const [boot] = await MoviliAPI.fetchAll(MoviliAPI.bootstrap);
 
   if (grid && boot && boot.metrics) {
-    const html = boot.metrics.map(m => `<article class="metric-card"><span>${m.label}</span><strong>${m.value}${m.unit}</strong><small>${m.trend}% tendencia</small></article>`).join("");
+    const levelClass={'Alto':'risk-high','Medio':'risk-mid','Bajo':'risk-low','Datos insuficientes':'risk-na'};
+    const html = boot.metrics.map(m => {
+      const lvl = m.level || '—';
+      return `<article class="metric-card ${levelClass[lvl]||''}"><span>${m.label}</span><strong>${m.value}${m.unit}</strong><small>${lvl}</small></article>`;
+    }).join("");
     MoviliLive.setHTML(grid, html);
   }
   if (weather && boot && boot.weather) {
@@ -20,12 +24,28 @@ async function renderDashboard() {
     `);
   }
   if (table && boot && boot.zones && boot.zones.length) {
-    const html = boot.zones.map(t => `<tr><td>${t.zone}</td><td>${t.congestion_level}%</td><td>${t.average_speed} km/h</td><td>${t.incidents}</td><td>${t.status}</td></tr>`).join("");
+    const html = boot.zones.map(t => {
+      const cg=Number(t.congestion_level), sp=Number(t.average_speed), ic=Number(t.incidents);
+      const cgCl=cg>=75?'cg-high':cg>=55?'cg-mid':'cg-low';
+      const spCl=sp>40?'sp-fast':sp>=20?'sp-mid':'sp-slow';
+      const icCl=ic>15?'ic-high':ic>=6?'ic-mid':ic>0?'ic-low':'ic-none';
+      const src=t.source==='TomTom Traffic API'?'🛰️ TomTom':'📊 Estimado';
+      return `<tr><td>${t.zone}</td><td><span class="congestion ${cgCl}">${cg}%</span></td><td><span class="speed ${spCl}">${sp}</span> km/h</td><td><span class="incidents ${icCl}">${ic}</span></td><td>${src}</td></tr>`;
+    }).join("");
     MoviliLive.setHTML(table, html);
   }
   if (feed && boot && boot.alerts && boot.alerts.length) {
     const html = boot.alerts.map(a => `<article class="alert-card ${a.level}"><span class="badge-risk">${a.level}</span><h2>${a.title}</h2><p>${a.description}</p><small>${a.zone}</small></article>`).join("");
     MoviliLive.setHTML(feed, html);
+  }
+  if (boot && boot.accidents_api_ok === false) {
+    const feed = document.getElementById("alertsFeed");
+    if (feed) {
+      const warning = document.createElement("article");
+      warning.className = "alert-card medium";
+      warning.innerHTML = '<span class="badge-risk">aviso</span><h2>⚠️ Incidentes TomTom no disponibles</h2><p>La API de incidentes de tr\u00e1fico no est\u00e1 respondiendo. Los conteos de incidentes por zona pueden estar en 0.</p><small>Los datos de flujo y congesti\u00f3n no se ven afectados</small>';
+      feed.prepend(warning);
+    }
   }
   if (routes && !document.getElementById("routeForm")) {
     try {

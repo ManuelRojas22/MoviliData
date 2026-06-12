@@ -6,8 +6,12 @@
     </button>
     <div class="ms-auto d-flex align-items-center gap-3">
       <span class="status-dot"></span>
-      <span class="small text-cyan" id="liveStatus">Smart mobility live</span>
+      <span class="small text-cyan" id="liveStatus">Actualizando...</span>
+      <span id="nextUpdate" class="next-update-badge"></span>
       <a href="/" class="back-link-nav">← Inicio</a>
     </div>
   </div>
 </nav>
+<script>
+(function(){var e=document.getElementById('liveStatus');if(!e)return;var f=function(){var d=new Date();var h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();var ampm=h>=12?'p. m.':'a. m.';h=h%12||12;e.textContent='Actualizado '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' '+ampm;};f();setInterval(f,1000);})();
+</script>

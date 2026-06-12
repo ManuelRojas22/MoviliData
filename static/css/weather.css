@@ -1,0 +1,46 @@
+.clima-tooltip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5) !important;
+  padding: 8px 12px !important;
+  color: #f4f7fb !important;
+  font-family: inherit !important;
+  font-size: .8rem !important;
+  line-height: 1.5 !important;
+}
+.clima-tooltip::before {
+  display: none !important;
+}
+.leaflet-tooltip.clima-tooltip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5) !important;
+  padding: 8px 12px !important;
+  color: #f4f7fb !important;
+  font-family: inherit !important;
+  font-size: .8rem !important;
+  line-height: 1.5 !important;
+}
+.clima-tooltip strong {
+  color: #f4f7fb;
+  font-size: .85rem;
+}
+.clima-tooltip table {
+  border-collapse: collapse;
+  margin-top: 2px;
+}
+.clima-tooltip table td {
+  padding: 1px 6px 1px 0;
+  white-space: nowrap;
+}
+.clima-tooltip .label {
+  color: #94a3b8;
+  padding-right: 10px;
+}
+.clima-tooltip .value {
+  color: #f4f7fb;
+  font-weight: 600;
+  text-align: right;
+}

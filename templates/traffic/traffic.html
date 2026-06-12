@@ -1,15 +1,33 @@
 {% extends "base/base.html" %}
 {% block title %}Trafico | MoviliData OS{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Monitoreo vial</p><h1>Trafico en tiempo real</h1></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
-<section class="panel"><div id="trafficMap" class="map-large"><div class="spinner" id="trafficMapSpinner"></div></div></section>
-<section class="panel mt-4 table-responsive"><table class="table table-dark table-hover"><thead><tr><th>Zona</th><th>Congestion</th><th>Velocidad</th><th>Incidentes</th><th>Estado</th></tr></thead><tbody id="trafficTable">
+<style>
+.filter-layout{display:grid;grid-template-columns:minmax(220px,260px) 1fr;gap:12px}.filter-side{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:14px}.filter-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);font-weight:800;margin:0 0 6px}.filter-side .form-check-label{font-size:.82rem;color:var(--text-soft)}.filter-side .form-range{accent-color:var(--brand-cyan)}.filter-value{float:right;color:var(--brand-cyan);font-weight:800}.map-wrap{position:relative;min-width:0}.map-caption{position:absolute;top:12px;left:12px;z-index:500;background:rgba(9,16,28,.82);border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 10px;color:var(--text-soft);font-size:.78rem;backdrop-filter:blur(8px)}@media(max-width:768px){.filter-layout{grid-template-columns:1fr}.filter-side{max-height:260px;overflow:auto}}
+#trafficTable td{color:var(--text-soft)}#trafficTable td>span.congestion,#trafficTable td>span.speed{font-weight:700!important}
+.cg-high{color:#ef4444!important}.cg-mid{color:#f59e0b!important}.cg-low{color:#28d17c!important}
+.sp-fast{color:#28d17c!important}.sp-mid{color:#f59e0b!important}.sp-slow{color:#ef4444!important}
+</style>
+<div class="page-head"><div><p class="eyebrow">Monitoreo vial</p><h1>Trafico en tiempo real</h1><small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">Medellín, Colombia — <span class="page-updated">actualizando...</span></small></div><button class="btn btn-info" data-refresh>Actualizar</button></div>
+<section class="panel">
+  <div class="filter-layout">
+    <aside class="filter-side" id="trafficFilters">
+      <div><label class="filter-title" for="trafficSpeed">Velocidad minima <span class="filter-value" id="trafficSpeedText">0 km/h</span></label><input class="form-range" type="range" id="trafficSpeed" min="0" max="60" value="0"></div>
+      <div><p class="filter-title">Opciones</p><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="trafficVehicles" checked><label class="form-check-label" for="trafficVehicles">Animacion vehicular</label></div></div>
+      <div><p class="filter-title">Zonas</p><div id="trafficZoneList"></div></div>
+      <div><label class="filter-title" for="trafficMaxCong">Congestión máxima <span class="filter-value" id="trafficMaxText">100%</span></label><input class="form-range" type="range" id="trafficMaxCong" min="0" max="100" value="100"></div>
+      <button class="btn btn-sm btn-outline-light" type="button" id="trafficReset">Resetear filtros</button>
+    </aside>
+    <div class="map-wrap"><div class="map-caption" id="trafficCaption">Trafico de todas las zonas</div><div id="trafficMap" class="map-large"><div class="spinner" id="trafficMapSpinner"></div></div><div style="position:absolute;bottom:12px;right:12px;z-index:500;display:flex;align-items:center;gap:6px;background:rgba(9,16,28,.75);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 9px;backdrop-filter:blur(6px);"><span style="font-size:.65rem;color:var(--text-muted);font-weight:700;letter-spacing:.06em;">MoviliData OS</span><span style="font-size:.6rem;color:var(--brand-cyan);">🚦 Tráfico</span></div></div>
+  </div>
+</section>
+<section class="panel mt-4 table-responsive"><table class="table table-dark table-hover">    <thead><tr><th>📍 Zona</th><th>🚗 Congestión</th><th>💨 Velocidad</th><th>🚧 Incidentes</th><th>📡 Fuente</th></tr></thead><tbody id="trafficTable">
   {% if boot and boot.zones %}
   {% for z in boot.zones %}
-  <tr><td>{{ z.zone }}</td><td>{{ z.congestion_level }}%</td><td>{{ z.average_speed }} km/h</td><td>{{ z.incidents }}</td><td><span class="badge-risk {% if z.congestion_level >= 75 %}risk-high{% elif z.congestion_level >= 55 %}risk-mid{% else %}risk-low{% endif %}">{{ z.status }}</span></td></tr>
+  <tr><td>{{ z.zone }}</td><td><span class="congestion {% if z.congestion_level >= 75 %}cg-high{% elif z.congestion_level >= 55 %}cg-mid{% else %}cg-low{% endif %}">{{ z.congestion_level }}%</span></td><td><span class="speed {% if z.average_speed > 40 %}sp-fast{% elif z.average_speed >= 20 %}sp-mid{% else %}sp-slow{% endif %}">{{ z.average_speed }}</span> km/h</td><td>{{ z.incidents|default:0 }}</td><td>🛰️ TomTom</td></tr>
   {% endfor %}
   {% endif %}
 </tbody></table></section>
+
 <script>
 (async()=>{
   const fromCache = window.__prefetchCache && window.__prefetchCache["/api/bootstrap"];
@@ -27,19 +45,45 @@
   const t=document.getElementById("trafficTable");
   if(t){
     const h=z.map(x=>{
-      const c=x.congestion_level>=75?"risk-high":x.congestion_level>=55?"risk-mid":"risk-low";
-      return `<tr><td>${x.zone}</td><td>${x.congestion_level}%</td><td>${x.average_speed} km/h</td><td>${x.incidents}</td><td><span class="badge-risk ${c}">${x.status}</span></td></tr>`;
+      const cg=Number(x.congestion_level), sp=Number(x.average_speed);
+      const cgCl=cg>=75?'cg-high':cg>=55?'cg-mid':'cg-low';
+      const spCl=sp>40?'sp-fast':sp>=20?'sp-mid':'sp-slow';
+      return `<tr><td>${x.zone}</td><td><span class="congestion ${cgCl}">${cg}%</span></td><td><span class="speed ${spCl}">${sp}</span> km/h</td><td>${x.incidents||0}</td><td>🛰️ TomTom</td></tr>`;
     }).join("");
-    t.dataset.lastHtml=h;t.innerHTML=h;
+    t.dataset.lastHtml=h;t.innerHTML=h;if(window.MoviliLive)MoviliLive.flash(t);
   }
-  const m=document.getElementById("trafficMap"),s=document.getElementById("trafficMapSpinner");
-  if(m&&s){
-    s.outerHTML='<div id="zoneCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:12px;height:100%;align-content:start">'+
-      z.map(x=>{
-        const p=x.congestion_level,c=p>=75?"#ef4444":p>=55?"#f59e0b":"#22c55e";
-        return `<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:10px;text-align:center;border-left:3px solid ${c}"><div style="font-size:.75rem;color:#9fb2cf">${x.zone}</div><div style="font-size:1.3rem;font-weight:700;color:${c}">${p}%</div><div style="font-size:.65rem;color:#dbeafe">${x.average_speed} km/h</div></div>`;
-      }).join('')+'</div>';
+})();
+</script>
+{% endblock %}
+{% block scripts %}
+<script>
+(()=>{
+  let cache=null, zones=[];
+  const selectedZones=()=>new Set([...document.querySelectorAll("#trafficZoneList input:checked")].map(i=>i.value));
+  const boot=async()=>cache||(cache=await MoviliAPI.bootstrap());
+  async function applyTrafficFilters(){
+    const map=createOsmMap("trafficMap"); if(!map) return;
+    const layer=dynamicLayer("trafficMap"); if(!layer) return;
+    const minSpeed=Number(document.getElementById("trafficSpeed").value);
+    document.getElementById("trafficSpeedText").textContent=minSpeed+" km/h";
+    const maxCong=Number(document.getElementById("trafficMaxCong").value);
+    document.getElementById("trafficMaxText").textContent=maxCong+"%";
+    const allowed=selectedZones();
+    const b=await boot();const allZones=b.zones||[];
+    const filtered=allZones.filter(z=>allowed.has(z.zone)&&Number(z.average_speed)>=minSpeed&&Number(z.congestion_level)<=maxCong);
+    filtered.forEach(z=>addZoneMarker(layer,z,`${z.congestion_level}%<table><tr><td class="label">Velocidad</td><td class="value">${z.average_speed} km/h</td></tr><tr><td class="label">Flujo libre</td><td class="value">${z.free_flow_speed||'?'} km/h</td></tr><tr><td class="label">Riesgo</td><td class="value">${z.risk||0}%</td></tr><tr><td class="label">Lluvia</td><td class="value">${z.rain_probability||0}%</td></tr><tr><td class="label">Fuente</td><td class="value">🛰️ TomTom</td></tr></table>`));
+    if(document.getElementById("trafficVehicles").checked) startVehicleAnimation("trafficMap",filtered); else stopVehicleAnimation("trafficMap");
+    document.getElementById("trafficCaption").textContent=`${filtered.length} zonas — vel min ${minSpeed} km/h, cong max ${maxCong}%`;
+    MoviliLive.flash(document.getElementById("trafficMap"));
   }
+  window.renderTrafficMap=()=>applyTrafficFilters();
+  document.addEventListener("DOMContentLoaded",async()=>{
+    window.renderTrafficMap=()=>applyTrafficFilters();
+    zones=((await boot()).zones||[]).map(z=>z.zone);
+    document.getElementById("trafficZoneList").innerHTML=zones.map(z=>`<div class="form-check"><input class="form-check-input" type="checkbox" value="${z}" id="traffic-${z.replace(/\s/g,"")}" checked><label class="form-check-label" for="traffic-${z.replace(/\s/g,"")}">${z}</label></div>`).join("");
+    document.querySelectorAll("#trafficFilters input").forEach(i=>i.addEventListener(i.type==="range"?"input":"change",applyTrafficFilters));
+    document.getElementById("trafficReset").addEventListener("click",()=>{document.querySelectorAll("#trafficZoneList input").forEach(i=>i.checked=true);document.getElementById("trafficSpeed").value=0;document.getElementById("trafficMaxCong").value=100;document.getElementById("trafficVehicles").checked=true;applyTrafficFilters()});
+  });
 })();
 </script>
 {% endblock %}

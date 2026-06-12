@@ -1,0 +1,126 @@
+{% extends "base/base.html" %}
+{% block title %}{{ comuna.full_name }} | MoviliData OS{% endblock %}
+{% block content %}
+<style>
+.comuna-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.comuna-badge{background:var(--brand-cyan);color:#0a0f1a;padding:4px 14px;border-radius:20px;font-weight:800;font-size:.8rem;letter-spacing:.05em}.comuna-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}@media(max-width:768px){.comuna-grid{grid-template-columns:1fr}}.comuna-map-panel{grid-column:1/-1;min-height:400px}.stat-card{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px;text-align:center}.stat-card .stat-value{font-size:1.6rem;font-weight:800;color:var(--text-bright)}.stat-card .stat-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}.incident-item{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:.82rem;display:flex;align-items:center;gap:10px}.comuna-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.comuna-nav a{padding:4px 10px;border-radius:12px;font-size:.72rem;background:var(--surface-2);border:1px solid var(--line);color:var(--text-soft);text-decoration:none;transition:all .15s}.comuna-nav a:hover,.comuna-nav a.active{background:var(--brand-cyan);color:#0a0f1a;border-color:var(--brand-cyan);font-weight:700}
+</style>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Geoanalitica / Comunas</p>
+    <div class="comuna-header">
+      <h1>{{ comuna.full_name }}</h1>
+      <span class="comuna-badge">Comuna {{ comuna.numero }}</span>
+    </div>
+    <small style="color:#94a3b8;font-size:.75rem;display:block;margin-top:4px;">
+      Medellín, Colombia — <span class="page-updated">actualizando...</span>
+    </small>
+  </div>
+  <a href="{% url 'risk_zones' %}" class="btn btn-outline-light" style="font-size:.82rem;">← Volver al mapa</a>
+</div>
+
+<div class="comuna-nav">
+  {% for c in all_comunas %}
+  <a href="{% url 'comuna_detail' c|slugify %}" class="{% if c == comuna.name %}active{% endif %}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<div class="comuna-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ comuna.data.congestion|default:"—" }}%</div>
+    <div class="stat-label">🚗 Congestión</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ comuna.data.speed|default:"—" }}</div>
+    <div class="stat-label">⚡ Velocidad (km/h)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ comuna.delay_risk.value|default:"—" }}{% if comuna.delay_risk.value is not None %}%{% endif %}</div>
+    <div class="stat-label">⏱️ Riesgo de retrasos</div>
+    <div style="font-size:.65rem;color:var(--text-muted);margin-top:2px;">{{ comuna.delay_risk.level|default:"" }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ comuna.route_risk.value|default:"—" }}{% if comuna.route_risk.value is not None %}%{% endif %}</div>
+    <div class="stat-label">🛣️ Riesgo en ruta</div>
+    <div style="font-size:.65rem;color:var(--text-muted);margin-top:2px;">{{ comuna.route_risk.level|default:"" }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ weather.precipitation_probability|default:"0" }}%</div>
+    <div class="stat-label">🌧️ Prob. lluvia</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ weather.temperature|default:"—" }}°C</div>
+    <div class="stat-label">🌡️ Temperatura</div>
+  </div>
+
+  <div class="panel comuna-map-panel">
+    <h2>Mapa de la comuna</h2>
+    <div id="comunaMap" style="height:400px;border-radius:var(--radius-md);"><div class="spinner"></div></div>
+  </div>
+
+  <div class="panel" style="grid-column:1/-1;">
+    <h2>Incidentes en {{ comuna.name }} ({{ comuna.incident_count }})</h2>
+    {% if comuna.incidents %}
+    <div style="margin-top:8px;">
+      {% for inc in comuna.incidents %}
+      <div class="incident-item">
+        <span>{{ inc.icon|default:"⚠️" }}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;">{{ inc.category }}</div>
+          <div style="color:var(--text-muted);font-size:.75rem;">{{ inc.description|truncatechars:80 }}</div>
+        </div>
+        <div style="text-align:right;font-size:.7rem;color:var(--text-muted);white-space:nowrap;">
+          <div>{{ inc.fecha_hora|default:"" }}</div>
+          {% if inc.magnitude %}<div>Retraso: {{ inc.magnitude }}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);padding:20px 0;text-align:center;">No hay incidentes activos en esta comuna.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const lat = {{ comuna.lat }};
+  const lng = {{ comuna.lng }};
+  const map = createOsmMap("comunaMap", [lat, lng], 14);
+  if (!map) return;
+  const layer = L.layerGroup().addTo(map);
+  const zonaCircle = L.circleMarker([lat, lng], {
+    radius: 14,
+    color: "#38bdf8",
+    weight: 3,
+    fillColor: "#38bdf8",
+    fillOpacity: 0.25
+  }).addTo(layer)
+    .bindTooltip("<strong>{{ comuna.full_name }}</strong>", {sticky: true, className: "clima-tooltip"})
+    .bindPopup(`<div style="min-width:180px;text-align:center;"><strong style="font-size:.95rem;color:#f4f7fb;">📍 {{ comuna.full_name }}</strong><hr style="border-color:#334155;margin:8px 0;"><table style="width:100%;font-size:.78rem;"><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚗 Congestión</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.congestion|default:"—" }}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚡ Velocidad</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.speed|default:"—" }} km/h</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚠️ Riesgo</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.risk|default:"—" }}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚨 Incidentes</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.incident_count }}</td></tr></table></div>`,{className:'clima-tooltip',maxWidth:280});
+  {% if comuna.data %}
+  L.circleMarker([lat, lng], {
+    radius: 8,
+    color: "#fff",
+    weight: 2,
+    fillColor: "{% if comuna.data.risk and comuna.data.risk >= 75 %}#ef4444{% elif comuna.data.risk and comuna.data.risk >= 55 %}#f59e0b{% else %}#22c55e{% endif %}",
+    fillOpacity: 0.9
+  }).addTo(layer)
+    .bindTooltip("{{ comuna.data.congestion|default:'?' }}% congestión · {{ comuna.data.speed|default:'?' }} km/h · {{ comuna.data.risk|default:'?' }}% riesgo", {sticky: true, className: "clima-tooltip"})
+    .bindPopup(`<div style="min-width:180px;text-align:center;"><strong style="font-size:.95rem;color:#f4f7fb;">{{ comuna.name }}</strong><hr style="border-color:#334155;margin:8px 0;"><table style="width:100%;font-size:.78rem;"><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚗 Congestión</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.congestion|default:"—" }}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚡ Velocidad</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.speed|default:"—" }} km/h</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">⚠️ Riesgo</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.risk|default:"—" }}%</td></tr><tr><td style="color:#94a3b8;padding:2px 8px 2px 0;">🚨 Incidentes</td><td style="color:#f4f7fb;font-weight:600;text-align:right;">{{ comuna.data.incidents|default:"0" }}</td></tr></table></div>`,{className:'clima-tooltip',maxWidth:280});
+  {% endif %}
+  {% for inc in comuna.incidents %}
+  L.circleMarker([{{ inc.lat }}, {{ inc.lng }}], {
+    radius: 5,
+    color: "#fff",
+    weight: 1,
+    fillColor: "{{ inc.color|default:'#f59e0b' }}",
+    fillOpacity: 0.8
+  }).addTo(layer)
+    .bindTooltip("{{ inc.icon|default:'⚠️' }} {{ inc.category }}: {{ inc.description|escapejs|truncatechars:60 }}", {sticky: true, className: "clima-tooltip"})
+    .bindPopup(`<div style="min-width:200px;"><strong style="font-size:.85rem;color:#f4f7fb;">{{ inc.icon|default:"⚠️" }} {{ inc.category }}</strong><br><span style="color:#94a3b8;font-size:.78rem;">{{ inc.description|escapejs|truncatechars:100 }}</span><hr style="border-color:#334155;margin:6px 0;"><div style="font-size:.75rem;color:#94a3b8;">🕐 {{ inc.fecha_hora|default:"" }}<br>📍 {{ inc.from|default:"" }}{% if inc.to %} → {{ inc.to }}{% endif %}{% if inc.magnitude %}<br>⏱ Retraso: {{ inc.magnitude }}{% endif %}</div></div>`,{className:'clima-tooltip',maxWidth:300});
+  {% endfor %}
+  MoviliLive.flash(document.getElementById("comunaMap"));
+});
+</script>
+{% endblock %}

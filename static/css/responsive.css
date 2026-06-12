@@ -22,7 +22,7 @@
     min-height:auto;
     padding:30px 20px;
   }
-  .landing-hero::before{background:rgba(7,17,31,.82)}
+  .landing-hero::before{background:rgba(7,17,31,.3)}
   .hero-content h1{font-size:3.2rem}
   .hero-actions{display:grid}
   .hero-visual{order:-1}
@@ -32,7 +32,7 @@
   .panel{padding:16px}
   .metric-card{min-height:124px}
   .map-preview,.map-large{height:360px}
-  .map-xl{height:64vh;min-height:390px}
+  .map-xl{height:75vh;min-height:450px}
   .table-responsive{overflow-x:auto}
   .footer{padding:16px 18px}
 }
@@ -56,7 +56,7 @@
   .hero-visual{order:-1}
   .step-connector{display:none}
   .map-large,.map-preview{height:390px}
-  .map-xl{height:66vh;min-height:430px}
+  .map-xl{height:75vh;min-height:480px}
   .table-responsive{overflow-x:auto}
 }
 
@@ -76,7 +76,7 @@
 @media (min-width:992px) and (max-width:1199.98px){
   .sidebar{width:232px}
   .content-wrap,.landing-body .content-wrap{padding:26px}
-  .dashboard-grid{grid-template-columns:1.45fr 1fr}
+  .dashboard-grid{grid-template-columns:1.3fr 1fr}
   .landing-features{grid-template-columns:repeat(2,1fr)}
   .landing-steps{grid-template-columns:repeat(4,1fr)}
   .step-connector{display:none}

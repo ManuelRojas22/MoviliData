@@ -33,7 +33,7 @@
 }
 .dashboard-grid{
   display:grid;
-  grid-template-columns:minmax(0,2fr) minmax(320px,1fr);
+  grid-template-columns:1.3fr 1fr;
   gap:18px;
   align-items:stretch;
 }
@@ -44,6 +44,7 @@
   gap:18px;
 }
 .map-panel{min-height:430px}
+.nh-dropdown{z-index:9999!important}
 .alerts-feed{max-height:460px;overflow:auto}
 .alert-item,.route-item{
   padding:14px;
@@ -166,3 +167,7 @@ input[type="range"]{
   width:min(280px,100%);
   accent-color:var(--cyan);
 }
+#trafficTable td>span.congestion,#trafficTable td>span.speed,#trafficTable td>span.incidents{font-weight:700!important}
+.cg-high{color:#ef4444!important}.cg-mid{color:#f59e0b!important}.cg-low{color:#28d17c!important}
+.sp-fast{color:#28d17c!important}.sp-mid{color:#f59e0b!important}.sp-slow{color:#ef4444!important}
+.ic-high{color:#ef4444!important}.ic-mid{color:#f59e0b!important}.ic-low{color:#28d17c!important}.ic-none{color:#6b7280!important}

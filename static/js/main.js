@@ -65,9 +65,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.MoviliLive = {
-  intervalMs: 5000,
+  intervalMs: 60000,
   timers: [],
   _fns: [],
+  _countdownTimer: null,
+  _countdownElement: null,
+  _countdownSeconds: 0,
+  _countdownRemaining: 0,
   register(fn, intervalMs = 20000) {
     this._fns.push(fn);
     if (document.visibilityState === "visible") fn();
@@ -75,6 +79,7 @@ window.MoviliLive = {
       if (document.visibilityState === "visible") fn();
     }, intervalMs);
     this.timers.push(timer);
+    this.startCountdown(Math.round(intervalMs / 1000), "nextUpdate");
     return timer;
   },
   refreshAll() {
@@ -88,11 +93,54 @@ window.MoviliLive = {
     void status.offsetWidth;
     status.classList.add("live-flash");
   },
+  startCountdown(seconds, elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    this._countdownElement = el;
+    this._countdownSeconds = seconds;
+    this._countdownRemaining = seconds;
+    if (this._countdownTimer) {
+      clearInterval(this._countdownTimer);
+    }
+    const update = () => {
+      this._countdownRemaining--;
+      if (this._countdownRemaining <= 0) {
+        el.textContent = "↻ Actualizando...";
+        el.classList.remove("countdown-urgent");
+        this._countdownRemaining = this._countdownSeconds;
+        clearInterval(this._countdownTimer);
+        this._countdownTimer = setInterval(update, 1000);
+        return;
+      }
+      const mins = Math.floor(this._countdownRemaining / 60);
+      const secs = this._countdownRemaining % 60;
+      el.textContent = `↻ ${mins}:${String(secs).padStart(2, "0")}`;
+      if (this._countdownRemaining <= 10) {
+        el.classList.add("countdown-urgent");
+      } else {
+        el.classList.remove("countdown-urgent");
+      }
+    };
+    update();
+    this._countdownTimer = setInterval(update, 1000);
+  },
+  _flashType(element) {
+    if (!element) return 'default';
+    const id = element.id || '';
+    const cls = element.className || '';
+    if (id.includes('Map') || cls.includes('map-wrap') || cls.includes('map-large') || cls.includes('map-xl')) return 'map';
+    if (id.includes('Table') || id.includes('table') || element.tagName === 'TABLE' || cls.includes('zone-table')) return 'table';
+    if (id === 'statsMetrics' || id === 'metricGrid' || cls.includes('stat-grid') || cls.includes('metric-card') || cls.includes('stat-card') || cls.includes('alert-card')) return 'card';
+    if (cls.includes('chart-grid') || (cls.includes('panel') && element.querySelector('canvas'))) return 'chart';
+    return 'default';
+  },
   flash(element) {
     if (!element) return;
-    element.classList.remove("live-flash");
+    const type = this._flashType(element);
+    const cls = type === 'default' ? 'live-flash' : 'live-flash-' + type;
+    element.classList.remove(cls);
     void element.offsetWidth;
-    element.classList.add("live-flash");
+    element.classList.add(cls);
   },
   setHTML(element, html) {
     if (!element || element.dataset.lastHtml === html) return;

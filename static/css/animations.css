@@ -3,7 +3,15 @@
 .status-dot{animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
 .live-flash{animation:liveFlash .7s ease}
-@keyframes liveFlash{0%{filter:brightness(1.8);box-shadow:0 0 0 rgba(56,189,248,0)}45%{filter:brightness(1.2);box-shadow:0 0 28px rgba(56,189,248,.35)}100%{filter:brightness(1);box-shadow:inherit}}
+.live-flash-map{animation:liveFlashMap 1.2s ease}
+.live-flash-table{animation:liveFlashTable .8s ease}
+.live-flash-card{animation:liveFlashCard .6s ease}
+.live-flash-chart{animation:liveFlashChart .7s ease}
+@keyframes liveFlash{0%{opacity:.7;filter:brightness(1.6);box-shadow:0 0 0 rgba(56,189,248,0);transform:scale(.98)}40%{opacity:1;filter:brightness(1.2);box-shadow:0 0 30px rgba(56,189,248,.3);transform:scale(1.005)}100%{opacity:1;filter:brightness(1);box-shadow:inherit;transform:scale(1)}}
+@keyframes liveFlashMap{0%{opacity:.82;filter:brightness(1.25)}50%{opacity:1;filter:brightness(1.08)}100%{opacity:1;filter:brightness(1)}}
+@keyframes liveFlashTable{0%{box-shadow:inset 0 0 0 0 rgba(56,189,248,0)}40%{box-shadow:inset 0 0 30px -10px rgba(56,189,248,.25)}100%{box-shadow:inset 0 0 0 0 rgba(56,189,248,0)}}
+@keyframes liveFlashCard{0%{transform:scale(.97);border-color:rgba(56,189,248,0);box-shadow:0 0 0 rgba(56,189,248,0)}50%{transform:scale(1.005);border-color:rgba(56,189,248,.5);box-shadow:0 0 24px rgba(56,189,248,.2)}100%{transform:scale(1);border-color:var(--line);box-shadow:inherit}}
+@keyframes liveFlashChart{0%{border-color:rgba(56,189,248,0);box-shadow:0 0 0 rgba(56,189,248,0)}50%{border-color:rgba(56,189,248,.5);box-shadow:0 0 28px -8px rgba(56,189,248,.25)}100%{border-color:var(--line);box-shadow:inherit}}
 
 .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);min-height:1em}
 .skeleton::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);animation:shimmer 1.6s infinite;transform:translateX(-100%)}
@@ -27,3 +35,61 @@
 
 .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;margin:20px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- landing page entry animations ---------- */
+.landing-hero .hero-content>*{opacity:0;animation:heroIn .8s ease forwards}
+.landing-hero .hero-content .hero-badge{animation-delay:.1s}
+.landing-hero .hero-content h1{animation-delay:.25s}
+.landing-hero .hero-content .hero-desc{animation-delay:.4s}
+.landing-hero .hero-content .hero-actions{animation-delay:.55s}
+.landing-hero .hero-visual{opacity:0;animation:heroIn 1s ease .3s forwards}
+@keyframes heroIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.landing-metrics-bar .metric-item{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.landing-metrics-bar .metric-item.in-view{opacity:1;transform:translateY(0)}
+.landing-metrics-bar .metric-item:nth-child(1){transition-delay:0s}
+.landing-metrics-bar .metric-item:nth-child(2){transition-delay:.1s}
+.landing-metrics-bar .metric-item:nth-child(3){transition-delay:.2s}
+.landing-metrics-bar .metric-item:nth-child(4){transition-delay:.3s}
+
+.landing-section-header,.landing-features .feature-card,.landing-steps .step-card,.landing-about .about-card,.landing-cta{
+  opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease
+}
+.landing-section-header.in-view,.landing-features .feature-card.in-view,.landing-steps .step-card.in-view,.landing-about .about-card.in-view,.landing-cta.in-view{
+  opacity:1;transform:translateY(0)
+}
+.landing-features .feature-card:nth-child(1){transition-delay:0s}
+.landing-features .feature-card:nth-child(2){transition-delay:.12s}
+.landing-features .feature-card:nth-child(3){transition-delay:.24s}
+.landing-features .feature-card:nth-child(4){transition-delay:.36s}
+.landing-steps .step-card:nth-child(1){transition-delay:0s}
+.landing-steps .step-card:nth-child(3){transition-delay:.1s}
+.landing-steps .step-card:nth-child(5){transition-delay:.2s}
+.landing-steps .step-card:nth-child(7){transition-delay:.3s}
+.landing-about .about-card:nth-child(1){transition-delay:0s}
+.landing-about .about-card:nth-child(2){transition-delay:.12s}
+.landing-about .about-card:nth-child(3){transition-delay:.24s}
+
+.landing-steps .step-connector{opacity:0;transition:opacity .5s ease}
+.landing-steps .step-connector.in-view{opacity:1}
+.landing-steps .step-connector:nth-child(2){transition-delay:.06s}
+.landing-steps .step-connector:nth-child(4){transition-delay:.16s}
+.landing-steps .step-connector:nth-child(6){transition-delay:.26s}
+
+/* ---------- landing hover / touch ---------- */
+.metric-item,.feature-card,.about-card,.step-card,.hero-glass-card{
+  transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease
+}
+@media(hover:hover){
+  .metric-item:hover,.feature-card:hover,.about-card:hover,.step-card:hover{
+    transform:translateY(-4px);border-color:rgba(56,189,248,.35);box-shadow:0 20px 50px -12px rgba(0,0,0,.45)
+  }
+  .hero-glass-card:hover{
+    transform:scale(1.015);border-color:rgba(56,189,248,.25);box-shadow:0 24px 60px rgba(0,0,0,.4)
+  }
+  .btn-hero-primary:hover{box-shadow:0 20px 44px rgba(47,128,237,.38)}
+  .btn-hero-outline:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35)}
+}
+.metric-item:active,.feature-card:active,.about-card:active,.step-card:active{
+  transform:translateY(-1px)
+}
